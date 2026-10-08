@@ -9,6 +9,8 @@ public interface IDesktopShellService
     string? BrowseForFolder(string initialFolder);
     void OpenFolder(string path);
     void OpenFile(string path);
+    IReadOnlyList<string> BrowseForFiles(string title, string filter, bool multiple);
+    bool Confirm(string message, string title);
 }
 
 public sealed class DesktopShellService : IDesktopShellService
@@ -22,6 +24,16 @@ public sealed class DesktopShellService : IDesktopShellService
         };
         return dialog.ShowDialog() == true ? dialog.FolderName : null;
     }
+
+    public IReadOnlyList<string> BrowseForFiles(string title, string filter, bool multiple)
+    {
+        var dialog = new OpenFileDialog { Title = title, Filter = filter, Multiselect = multiple, CheckFileExists = true };
+        return dialog.ShowDialog() == true ? dialog.FileNames : [];
+    }
+
+    public bool Confirm(string message, string title) =>
+        System.Windows.MessageBox.Show(message, title, System.Windows.MessageBoxButton.YesNo, System.Windows.MessageBoxImage.Warning)
+        == System.Windows.MessageBoxResult.Yes;
 
     public void OpenFolder(string path) => Open(path);
 

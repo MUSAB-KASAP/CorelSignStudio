@@ -31,9 +31,49 @@ public sealed class CorelAutomationService : ICorelAutomationService
         _progId = progId;
     }
 
+    public bool IsConnected => Volatile.Read(ref _application) is not null;
+
+    /// <summary>
+    /// When true, a CorelDRAW instance started by this service is left running on close/dispose,
+    /// because the user is working in it. Defaults to false (the original behaviour).
+    /// </summary>
+    public bool KeepApplicationOpen { get; set; }
+
     public Task<CorelConnectionInfo> ConnectAsync(bool visible = false, CancellationToken cancellationToken = default) =>
+        ConnectCoreAsync(visible, cancellationToken);
+
+    /// <summary>
+    /// Connects without touching the window state of a CorelDRAW the user already has open
+    /// (an instance started by this service stays hidden).
+    /// </summary>
+    public Task<CorelConnectionInfo> ConnectPreservingVisibilityAsync(CancellationToken cancellationToken = default) =>
+        ConnectCoreAsync(null, cancellationToken);
+
+    /// <summary>
+    /// Runs <paramref name="action"/> with the connected CorelDRAW application object on the dedicated
+    /// STA thread. This is the single entry point the inspector and the action executor use.
+    /// </summary>
+    internal Task<T> RunAsync<T>(string operation, Func<object, T> action, CancellationToken cancellationToken) =>
+        ExecuteAsync(operation, () =>
+        {
+            EnsureConnected();
+            return action(_application!);
+        }, cancellationToken);
+
+    internal void Log(string message) => WriteLog(message);
+
+    private Task<CorelConnectionInfo> ConnectCoreAsync(bool? visible, CancellationToken cancellationToken) =>
         ExecuteAsync("Connect", () =>
         {
+            if (_application is not null && !IsApplicationAlive(_application))
+            {
+                // The user closed CorelDRAW since the last call; drop the dead proxy and reconnect.
+                WriteLog("The previous CorelDRAW connection is no longer available; reconnecting.");
+                _document = null;
+                _application = null;
+                _ownsApplication = false;
+            }
+
             if (_application is null)
             {
                 var applicationType = Type.GetTypeFromProgID(_progId, throwOnError: false)
@@ -54,7 +94,10 @@ public sealed class CorelAutomationService : ICorelAutomationService
             }
 
             dynamic application = _application;
-            application.Visible = visible;
+            if (visible is { } requestedVisibility)
+            {
+                application.Visible = requestedVisibility;
+            }
 
             var version = ReadVersion(application);
             var result = new CorelConnectionInfo(
@@ -108,34 +151,45 @@ public sealed class CorelAutomationService : ICorelAutomationService
         var fullPath = PrepareOutputPath(path, ".cdr");
         return ExecuteAsync("SaveCdr", () =>
         {
-            dynamic document = EnsureDocument();
-            var signature = ComDispatchInspector.GetMethodSignature(_document!, "SaveAs");
-            WriteLog($"Runtime SaveAs signature: {signature}.");
-            object? saveOptions = null;
-            try
-            {
-                dynamic application = _application!;
-                saveOptions = application.CreateStructSaveAsOptions();
-                dynamic options = saveOptions;
-                options.Filter = CdrFilterCdr;
-                options.Overwrite = true;
-                document.SaveAs(fullPath, options);
-            }
-            finally
-            {
-                ReleaseComObject(saveOptions);
-            }
-
-            const string invocationShape = "SaveAs(string, StructSaveAsOptions { Filter=cdrCDR, Overwrite=true })";
-
-            if (!File.Exists(fullPath) || new FileInfo(fullPath).Length == 0)
-            {
-                throw new IOException($"CorelDRAW returned from SaveAs but did not create a non-empty file at '{fullPath}'.");
-            }
-
-            WriteLog($"Saved CDR: {fullPath}; runtime signature={signature}; invocation={invocationShape}.");
-            return new CorelSaveResult(fullPath, signature, invocationShape);
+            EnsureDocument();
+            return SaveCdrCore(_application!, _document!, fullPath, _log);
         }, cancellationToken);
+    }
+
+    /// <summary>
+    /// The SaveAs call shape verified against the real CorelDRAW 2026 runtime:
+    /// <c>SaveAs(string, StructSaveAsOptions { Filter = cdrCDR, Overwrite = true })</c>.
+    /// Shared by <see cref="SaveCdrAsync"/> and the action executor so there is one implementation.
+    /// </summary>
+    internal static CorelSaveResult SaveCdrCore(object applicationObject, object documentObject, string fullPath, Action<string>? log)
+    {
+        dynamic document = documentObject;
+        var signature = ComDispatchInspector.GetMethodSignature(documentObject, "SaveAs");
+        log?.Invoke($"Runtime SaveAs signature: {signature}.");
+        object? saveOptions = null;
+        try
+        {
+            dynamic application = applicationObject;
+            saveOptions = application.CreateStructSaveAsOptions();
+            dynamic options = saveOptions;
+            options.Filter = CdrFilterCdr;
+            options.Overwrite = true;
+            document.SaveAs(fullPath, options);
+        }
+        finally
+        {
+            ReleaseComObject(saveOptions);
+        }
+
+        const string invocationShape = "SaveAs(string, StructSaveAsOptions { Filter=cdrCDR, Overwrite=true })";
+
+        if (!File.Exists(fullPath) || new FileInfo(fullPath).Length == 0)
+        {
+            throw new IOException($"CorelDRAW returned from SaveAs but did not create a non-empty file at '{fullPath}'.");
+        }
+
+        log?.Invoke($"Saved CDR: {fullPath}; runtime signature={signature}; invocation={invocationShape}.");
+        return new CorelSaveResult(fullPath, signature, invocationShape);
     }
 
     public Task ExportPdfAsync(string path, CancellationToken cancellationToken = default)
@@ -198,7 +252,7 @@ public sealed class CorelAutomationService : ICorelAutomationService
             {
                 try
                 {
-                    if (_ownsApplication)
+                    if (_ownsApplication && !KeepApplicationOpen)
                     {
                         dynamic application = _application;
                         application.Quit();
@@ -232,7 +286,7 @@ public sealed class CorelAutomationService : ICorelAutomationService
                 {
                     try
                     {
-                        if (_ownsApplication)
+                        if (_ownsApplication && !KeepApplicationOpen)
                         {
                             dynamic application = _application;
                             application.Quit();
@@ -467,6 +521,20 @@ public sealed class CorelAutomationService : ICorelAutomationService
 
         Directory.CreateDirectory(Path.GetDirectoryName(fullPath)!);
         return fullPath;
+    }
+
+    private static bool IsApplicationAlive(object applicationObject)
+    {
+        try
+        {
+            dynamic application = applicationObject;
+            _ = application.Visible;
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
     }
 
     private static string ReadVersion(dynamic application)

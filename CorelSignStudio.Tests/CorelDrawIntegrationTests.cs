@@ -8,7 +8,8 @@ using Xunit.Abstractions;
 
 namespace CorelSignStudio.Tests;
 
-public sealed class CorelDrawIntegrationTests(ITestOutputHelper output)
+[Collection(CorelDrawCollection.Name)]
+public sealed class CorelDrawIntegrationTests(ITestOutputHelper output) : IClassFixture<CorelProcessJanitor>
 {
     [Fact]
     [Trait("Category", "CorelIntegration")]
