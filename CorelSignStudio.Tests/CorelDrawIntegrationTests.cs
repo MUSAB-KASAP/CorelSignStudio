@@ -8,6 +8,7 @@ using Xunit.Abstractions;
 
 namespace CorelSignStudio.Tests;
 
+[Collection(CorelDrawCollection.Name)]
 public sealed class CorelDrawIntegrationTests(ITestOutputHelper output)
 {
     [Fact]

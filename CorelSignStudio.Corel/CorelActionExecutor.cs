@@ -846,18 +846,36 @@ internal sealed class CorelAutomationSession(object applicationObject, Action<st
     private ActionOutcome ExportPng(ExportPngAction action)
     {
         var fullPath = PrepareOutputPath(action.FilePath);
-        dynamic filter = Document.ExportBitmap(
-            fullPath, FilterPng, ExportCurrentPage, ImageTypeRgb, 0, 0, action.Dpi, action.Dpi,
-            AntiAliasingNormal, false, action.Transparent);
-        filter.Finish();
+        dynamic document = Document;
+
+        // Exports the artwork on the active page (its bounding box) at the requested resolution.
+        dynamic options = _application.CreateStructExportOptions();
+        options.ImageType = ImageTypeRgb;
+        options.AntiAliasingType = AntiAliasingNormal;
+        options.Transparent = action.Transparent;
+        options.MaintainAspect = true;
+        options.ResolutionX = action.Dpi;
+        options.ResolutionY = action.Dpi;
+        ExportWithOptions(document, fullPath, FilterPng, options);
         return Produced(fullPath);
     }
 
     private ActionOutcome ExportSvg(ExportSvgAction action)
     {
         var fullPath = PrepareOutputPath(action.FilePath);
-        Document.Export(fullPath, FilterSvg, ExportCurrentPage);
+        ExportWithOptions(Document, fullPath, FilterSvg, _application.CreateStructExportOptions());
         return Produced(fullPath);
+    }
+
+    /// <summary>
+    /// Verified against CorelDRAW 2026: ExportEx only binds late when every argument, including the
+    /// "optional" palette options, is supplied — shorter calls fail with DISP_E_TYPEMISMATCH.
+    /// </summary>
+    private void ExportWithOptions(dynamic document, string fullPath, int filter, dynamic options)
+    {
+        dynamic palette = _application.CreateStructPaletteOptions();
+        dynamic exportFilter = document.ExportEx(fullPath, filter, ExportCurrentPage, options, palette);
+        exportFilter.Finish();
     }
 
     // ---- Helpers --------------------------------------------------------------------------
