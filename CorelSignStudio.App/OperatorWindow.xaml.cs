@@ -55,6 +55,19 @@ public partial class OperatorWindow : Window
         e.Handled = true;
     }
 
+    // A PasswordBox cannot be data-bound, so the typed key is handed over here and cleared immediately.
+    private void OnSaveAiSettings(object sender, RoutedEventArgs e)
+    {
+        _viewModel.SaveAiSettings(ApiKeyBox.Password);
+        ApiKeyBox.Clear();
+    }
+
+    private void OnRemoveAiKey(object sender, RoutedEventArgs e)
+    {
+        ApiKeyBox.Clear();
+        _viewModel.RemoveAiKey();
+    }
+
     private void ScrollLogToEnd(object? sender, NotifyCollectionChangedEventArgs e)
     {
         if (e.Action == NotifyCollectionChangedAction.Add && LogList.Items.Count > 0)

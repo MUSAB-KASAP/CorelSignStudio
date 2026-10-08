@@ -1,7 +1,9 @@
 using System.Collections.ObjectModel;
 using System.Globalization;
 using System.IO;
+using CorelSignStudio.AI;
 using CorelSignStudio.Corel;
+using CorelSignStudio.Domain.Ai;
 using CorelSignStudio.Domain.Assets;
 using CorelSignStudio.Domain.Automation;
 using CorelSignStudio.Domain.Batch;
@@ -17,6 +19,8 @@ namespace CorelSignStudio.App;
 public sealed record ShapeRow(string Id, string Type, string Name, string Text, string X, string Y, string Width, string Height, string Layer, string Group);
 
 public sealed record BatchPreviewRow(int Row, string OutputName, string Status);
+
+public sealed record PlannerModeOption(PlannerMode Mode, string DisplayName);
 
 public sealed record HistoryRow(ExecutionHistoryEntry Entry, string Time, string Name, string Result);
 
@@ -35,7 +39,8 @@ public sealed record OperatorServices(
     CorelAutomationService Corel,
     ICorelDocumentInspector Inspector,
     ICorelActionExecutor Executor,
-    ICommandPlanner Planner,
+    PlannerRouter Planner,
+    AiRuntime Ai,
     IRecipeStore Recipes,
     IAssetLibrary Assets,
     IExecutionHistoryStore History,
@@ -89,18 +94,36 @@ public sealed class OperatorViewModel : ObservableObject
     private string _assetCategory = "";
     private string _assetTags = "";
     private HistoryRow? _selectedHistory;
+    private AiProviderInfo _selectedAiProvider;
+    private string _aiModel;
+    private PlannerModeOption _selectedPlannerMode;
+    private bool _aiDebugLogging;
+    private string _aiTestResult = "";
+    private readonly List<PlanningTurn> _conversation = [];
 
     public OperatorViewModel(OperatorServices services)
     {
         _services = services;
         _outputFolder = services.DefaultOutputFolder;
+        var aiSettings = services.Ai.Settings;
+        _selectedAiProvider = services.Ai.Providers.FirstOrDefault(provider => provider.Id == aiSettings.Provider) ?? services.Ai.Providers[0];
+        _aiModel = aiSettings.Model;
+        _selectedPlannerMode = PlannerModeOptions.First(option => option.Mode == aiSettings.PlannerMode);
+        _aiDebugLogging = aiSettings.DebugLogging;
+        TestAiCommand = Async(TestAiConnectionAsync);
 
         ConnectCommand = Async(ConnectAsync);
         InspectCommand = Async(InspectAsync);
         PreparePlanCommand = Async(PreparePlanAsync);
         ExecuteCommand = Async(ExecutePlanAsync, () => _plan is not null);
         SaveRecipeCommand = Command(SaveRecipe, () => (_lastSuccessfulPlan ?? _plan) is not null && !string.IsNullOrWhiteSpace(RecipeName));
-        ClearPlanCommand = Command(() => SetPlan(null, Ui.T("Plan.Cleared")), () => _plan is not null);
+        ClearPlanCommand = Command(
+            () =>
+            {
+                _conversation.Clear();
+                SetPlan(null, Ui.T("Plan.Cleared"));
+            },
+            () => _plan is not null || _conversation.Count > 0);
         AddReferenceCommand = Command(BrowseReferences);
         RemoveReferenceCommand = Command(() => References.Remove(SelectedReference!), () => SelectedReference is not null);
         InsertShapeIdCommand = Command(InsertSelectedShapeId, () => SelectedShape is not null);
@@ -162,6 +185,7 @@ public sealed class OperatorViewModel : ObservableObject
     public RelayCommand BrowseBatchCsvCommand { get; }
     public RelayCommand PreviewBatchCommand { get; }
     public AsyncRelayCommand RunBatchCommand { get; }
+    public AsyncRelayCommand TestAiCommand { get; }
     public RelayCommand CancelBatchCommand { get; }
     public RelayCommand AddAssetCommand { get; }
     public RelayCommand RemoveAssetCommand { get; }
@@ -197,7 +221,87 @@ public sealed class OperatorViewModel : ObservableObject
     public bool RollbackOnFailure { get => _rollbackOnFailure; set => SetProperty(ref _rollbackOnFailure, value); }
     public string OutputFolder { get => _outputFolder; set => SetProperty(ref _outputFolder, value); }
     public string DataFolder => _services.DataFolder;
-    public string PlannerName => _services.Planner.Name;
+    public string PlannerName => _services.Planner.ActivePlannerName;
+
+    // ---- AI settings ---------------------------------------------------------------------------
+
+    public IReadOnlyList<AiProviderInfo> AiProviderOptions => _services.Ai.Providers;
+
+    public IReadOnlyList<PlannerModeOption> PlannerModeOptions { get; } =
+    [
+        new(PlannerMode.Ai, Msg.Get("Ai.Mode.Ai")),
+        new(PlannerMode.Deterministic, Msg.Get("Ai.Mode.Deterministic")),
+    ];
+
+    public AiProviderInfo SelectedAiProvider { get => _selectedAiProvider; set => SetProperty(ref _selectedAiProvider, value); }
+    public string AiModel { get => _aiModel; set => SetProperty(ref _aiModel, value); }
+    public PlannerModeOption SelectedPlannerMode { get => _selectedPlannerMode; set => SetProperty(ref _selectedPlannerMode, value); }
+    public bool AiDebugLogging { get => _aiDebugLogging; set => SetProperty(ref _aiDebugLogging, value); }
+    public string AiTestResult { get => _aiTestResult; private set => SetProperty(ref _aiTestResult, value); }
+
+    public string AiKeyStatus => _services.Ai.KeySource switch
+    {
+        ApiKeySource.Stored => Ui.T("Settings.Ai.Key.Stored"),
+        ApiKeySource.EnvironmentVariable => Ui.F("Settings.Ai.Key.Environment", _services.Ai.Providers.First(provider => provider.Id == _services.Ai.Settings.Provider).ApiKeyEnvironmentVariable),
+        _ => Ui.T("Settings.Ai.Key.None"),
+    };
+
+    public string AiSettingsPathText => Ui.F("Settings.Ai.StoredAt", _services.Ai.SettingsFilePath);
+
+    /// <summary>Called by the window with the content of the password box (which cannot be data-bound).</summary>
+    public void SaveAiSettings(string? typedApiKey)
+    {
+        try
+        {
+            _services.Ai.Save(
+                new AiSettings
+                {
+                    Provider = SelectedAiProvider.Id,
+                    Model = string.IsNullOrWhiteSpace(AiModel) ? SelectedAiProvider.DefaultModel : AiModel.Trim(),
+                    PlannerMode = SelectedPlannerMode.Mode,
+                    DebugLogging = AiDebugLogging,
+                },
+                typedApiKey);
+            AiModel = _services.Ai.Settings.Model;
+            AiTestResult = Ui.T("Settings.Ai.Saved");
+            AddLog(Ui.F("Log.AiSettingsSaved", PlannerNameAfterRefresh()));
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or System.Security.Cryptography.CryptographicException)
+        {
+            AiTestResult = Ui.T("Settings.Ai.SaveFailed");
+            _services.FileLog.Write("Saving AI settings failed.", exception);
+        }
+    }
+
+    public void RemoveAiKey()
+    {
+        _services.Ai.RemoveStoredApiKey();
+        AiTestResult = Ui.T("Settings.Ai.KeyRemoved");
+        PlannerNameAfterRefresh();
+    }
+
+    private string PlannerNameAfterRefresh()
+    {
+        OnPropertyChanged(nameof(AiKeyStatus));
+        OnPropertyChanged(nameof(PlannerName));
+        return PlannerName;
+    }
+
+    private Task TestAiConnectionAsync() => RunBusyAsync(Ui.T("Status.AiTesting"), async () =>
+    {
+        AiTestResult = Ui.T("Settings.Ai.Testing");
+        try
+        {
+            var response = await _services.Ai.TestConnectionAsync();
+            AiTestResult = Ui.F("Settings.Ai.TestOk", response.Model ?? _services.Ai.Settings.Model);
+        }
+        catch (AiClientException exception)
+        {
+            // The user gets the plain explanation; the technical reason goes to the log file.
+            AiTestResult = exception.UserMessage;
+            _services.FileLog.Write($"AI connection test failed ({exception.Kind}).", exception);
+        }
+    });
     public string LogPath => _services.FileLog.LogPath;
     public string LogFileText => Ui.F("Settings.LogFile", _services.FileLog.LogPath);
 
@@ -400,7 +504,7 @@ public sealed class OperatorViewModel : ObservableObject
         }
     }
 
-    private Task PreparePlanAsync() => RunBusyAsync(Ui.T("Status.Planning"), async () =>
+    private Task PreparePlanAsync() => RunBusyAsync(Ui.T(_services.Planner.IsAiActive && !string.IsNullOrWhiteSpace(Request) ? "Status.AiPlanning" : "Status.Planning"), async () =>
     {
         if (string.IsNullOrWhiteSpace(Request))
         {
@@ -436,20 +540,61 @@ public sealed class OperatorViewModel : ObservableObject
             return;
         }
 
+        var asked = Request.Trim();
         var result = await _services.Planner.PlanAsync(new PlanningRequest
         {
-            UserRequest = Request,
+            UserRequest = asked,
             Document = _snapshot,
             References = References.ToArray(),
+            Conversation = _conversation.ToArray(),
         });
-        var message = result.Message ?? "";
-        if (result.UnrecognizedCommands.Count > 0)
+
+        if (result.Diagnostics.TechnicalError is { } technical)
         {
-            message += Ui.F("Plan.NotUnderstood", string.Join(" | ", result.UnrecognizedCommands));
+            _services.FileLog.Write($"AI planning failed ({result.Diagnostics.ErrorKind}): {technical}");
         }
 
-        SetPlan(result.Plan, message);
+        switch (result.Status)
+        {
+            case AiPlanningStatus.NeedsClarification:
+                // Keep the exchange so the answer the user types next is planned in context.
+                _conversation.Add(new PlanningTurn(asked, result.ClarificationQuestion));
+                SetPlan(null, Ui.F("Plan.Clarification", result.ClarificationQuestion));
+                AddLog(Ui.F("Log.AiAsks", result.ClarificationQuestion));
+                Request = "";
+                StatusMessage = Ui.T("Status.NeedsAnswer");
+                break;
+
+            case AiPlanningStatus.Ready:
+                _conversation.Clear();
+                SetPlan(result.Plan, Compose(result));
+                break;
+
+            default:
+                _conversation.Clear();
+                SetPlan(null, Compose(result));
+                AddLog(result.UserMessage);
+                StatusMessage = Ui.T("Status.NoPlan");
+                break;
+        }
     });
+
+    /// <summary>Message line above the plan: outcome, the planner's explanation, then any warnings.</summary>
+    private static string Compose(AiPlanningResult result)
+    {
+        var message = result.UserMessage;
+        if (!string.IsNullOrWhiteSpace(result.Explanation) && result.IsReady)
+        {
+            message += " " + result.Explanation.Trim();
+        }
+
+        if (result.Warnings.Count > 0)
+        {
+            message += Ui.F("Plan.Warnings", string.Join(" • ", result.Warnings));
+        }
+
+        return message;
+    }
 
     private void SetPlan(AutomationPlan? plan, string message)
     {

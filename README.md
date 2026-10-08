@@ -7,8 +7,7 @@ CorelDRAW stays the design workspace; this application inspects the open documen
 operations for review, executes it, and can replay successful jobs as recipes and batches.
 
 It is a general automation platform — not a sign designer and not tied to any page size, company or
-kind of job. No external AI service is connected yet; the planner is a small deterministic placeholder
-behind `ICommandPlanner`.
+kind of job. Requests are planned by an AI planner when an API key is configured, and by a small deterministic planner otherwise.
 
 ```
 User request ─► ICommandPlanner ─► AutomationPlan ─► ICorelActionExecutor ─► CorelDRAW
@@ -30,6 +29,7 @@ Recipe + rows  ─► BatchExpander ─► one AutomationPlan per row ─► Bat
   - `Assets/` — the general asset library model.
 - `CorelSignStudio.Corel` — the only project that touches CorelDRAW COM. Every call runs on one dedicated STA thread.
   `CorelAutomationService` (connection, verified save/export), `CorelDocumentInspector`, `CorelActionExecutor`.
+- `CorelSignStudio.AI` — AI provider implementation (Anthropic SDK) and per-user AI settings with a DPAPI-encrypted key.
 - `CorelSignStudio.Storage` — JSON stores for recipes, assets and history; CSV batch reader; file-based reference analyzer.
 - `CorelSignStudio.App` — the operator window (Operator, Current document, Automation recipes, Batch jobs, Assets, History, Settings).
   The original sign-template window is still available from Settings.
@@ -49,6 +49,23 @@ Recipe + rows  ─► BatchExpander ─► one AutomationPlan per row ─► Bat
   documents a plan created or opened itself, are not rolled back.
 - **Recipes:** any value in a plan can be a `{{VARIABLE}}`; Number/Boolean variables become real JSON values,
   so sizes and counts can be variables too.
+
+## AI planner
+
+Natural-language requests are planned by `AiCommandPlanner` (Domain, provider-neutral) through `IAiClient`.
+The first provider is the Claude API via the official Anthropic C# SDK, in `CorelSignStudio.AI`.
+
+- The model only produces a plan. It is shown to the user and executed by the existing executor after approval.
+- `DocumentContextBuilder` sends a compact, prioritised view of the inspected document; logical ids are kept.
+- The prompt's action reference and the JSON schema are derived by reflection from the `CorelAction` types.
+- `AiPlanParser` is the safety gate: unknown action types, unknown properties, shape ids that are not in the
+  inspected document and plans failing `AutomationPlan.Validate()` are rejected and never reach the executor.
+- Ambiguous requests return `NeedsClarification` with a question; the answer is planned with the earlier turns.
+- `PlannerRouter` uses the AI planner when configured and selected, otherwise `DeterministicCommandPlanner`,
+  which also takes over when the provider is unreachable and it understands the whole request.
+- Settings and the API key live in `%LOCALAPPDATA%\CorelSignStudioi-settings.json`; the key is encrypted
+  with Windows DPAPI for the current user. `ANTHROPIC_API_KEY` is used when no key is stored.
+- Tests use a scripted mock `IAiClient`; no real API call is made.
 
 ## Language
 

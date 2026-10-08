@@ -3,7 +3,9 @@ using System.Windows;
 using System.Windows.Threading;
 using System.Globalization;
 using System.Windows.Markup;
+using CorelSignStudio.AI;
 using CorelSignStudio.Corel;
+using CorelSignStudio.Domain.Ai;
 using CorelSignStudio.Domain.Localization;
 using CorelSignStudio.Domain.Planning;
 using CorelSignStudio.Domain.References;
@@ -32,13 +34,23 @@ public partial class App : Application
         // The user works in the same CorelDRAW this application drives, so never quit it on exit.
         _corelService = new CorelAutomationService(assetCatalog, message => logger.Write(message)) { KeepApplicationOpen = true };
 
-        // Composition root: swapping DeterministicCommandPlanner for an AI planner, or
-        // FileReferenceAnalyzer for an AI vision analyzer, happens here and nowhere else.
+        // AI settings live in the user's profile (never in the repository); the key is DPAPI-encrypted.
+        var aiRuntime = new AiRuntime(
+            new AiSettingsStore(AiSettingsStore.DefaultFilePath, new DpapiSecretProtector()),
+            message => logger.Write(message));
+
+        // Composition root. The router sends requests to the AI planner when one is configured and
+        // selected, and to the built-in planner otherwise. Another provider is one more IAiClient.
+        var planner = new PlannerRouter(
+            new DeterministicCommandPlanner(),
+            () => aiRuntime.Planner,
+            () => aiRuntime.Settings.PlannerMode);
         var viewModel = new OperatorViewModel(new OperatorServices(
             Corel: _corelService,
             Inspector: new CorelDocumentInspector(_corelService),
             Executor: new CorelActionExecutor(_corelService),
-            Planner: new DeterministicCommandPlanner(),
+            Planner: planner,
+            Ai: aiRuntime,
             Recipes: new JsonRecipeStore(Path.Combine(dataFolder, "recipes")),
             Assets: new JsonAssetLibrary(Path.Combine(dataFolder, "assets")),
             History: new JsonExecutionHistoryStore(Path.Combine(dataFolder, "history")),

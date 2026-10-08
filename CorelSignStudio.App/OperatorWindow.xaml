@@ -545,7 +545,7 @@
             <!-- ============================== SETTINGS ============================== -->
             <TabItem Header="{local:Loc Tab.Settings}">
                 <Border Style="{StaticResource Card}" Margin="0,10,0,0">
-                    <StackPanel MaxWidth="760" HorizontalAlignment="Left">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto"><StackPanel MaxWidth="820" HorizontalAlignment="Left" Margin="0,0,12,0">
                         <TextBlock Text="{local:Loc Settings.Output}" Style="{StaticResource SectionTitle}"/>
                         <TextBlock Text="{local:Loc Settings.OutputFolder}" Style="{StaticResource FieldLabel}"/>
                         <Grid Margin="0,0,0,18">
@@ -566,6 +566,51 @@
                         <TextBlock Style="{StaticResource Hint}" Margin="0,4,0,18"
                                    Text="{local:Loc Settings.RollbackHint}"/>
 
+                        <TextBlock Text="{local:Loc Settings.Ai.Title}" Style="{StaticResource SectionTitle}"/>
+                        <Grid Margin="0,0,0,8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="220"/>
+                                <ColumnDefinition Width="12"/>
+                                <ColumnDefinition Width="220"/>
+                                <ColumnDefinition Width="12"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel>
+                                <TextBlock Text="{local:Loc Settings.Ai.Provider}" Style="{StaticResource FieldLabel}"/>
+                                <ComboBox ItemsSource="{Binding AiProviderOptions}" SelectedItem="{Binding SelectedAiProvider}" DisplayMemberPath="DisplayName"/>
+                            </StackPanel>
+                            <StackPanel Grid.Column="2">
+                                <TextBlock Text="{local:Loc Settings.Ai.Model}" Style="{StaticResource FieldLabel}"/>
+                                <TextBox Text="{Binding AiModel, UpdateSourceTrigger=PropertyChanged}" FontSize="12.5"/>
+                            </StackPanel>
+                            <StackPanel Grid.Column="4">
+                                <TextBlock Text="{local:Loc Settings.Ai.ApiKey}" Style="{StaticResource FieldLabel}"/>
+                                <PasswordBox x:Name="ApiKeyBox" FontSize="14" Padding="10,7" BorderBrush="#CFD5DB"/>
+                            </StackPanel>
+                        </Grid>
+                        <TextBlock Text="{Binding AiKeyStatus}" Style="{StaticResource Hint}" Margin="0,0,0,10"/>
+                        <Grid Margin="0,0,0,10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="220"/>
+                                <ColumnDefinition Width="12"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel>
+                                <TextBlock Text="{local:Loc Settings.Ai.PlannerMode}" Style="{StaticResource FieldLabel}"/>
+                                <ComboBox ItemsSource="{Binding PlannerModeOptions}" SelectedItem="{Binding SelectedPlannerMode}" DisplayMemberPath="DisplayName"/>
+                            </StackPanel>
+                            <CheckBox Grid.Column="2" VerticalAlignment="Bottom" Margin="0,0,0,6" IsChecked="{Binding AiDebugLogging}"
+                                      Content="{local:Loc Settings.Ai.DebugLogs}"/>
+                        </Grid>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                            <Button Content="{local:Loc Settings.Ai.Save}" Click="OnSaveAiSettings" Padding="12,6" FontSize="12.5" Margin="0,0,8,0"/>
+                            <Button Content="{local:Loc Settings.Ai.Test}" Command="{Binding TestAiCommand}" Padding="12,6" FontSize="12.5" Margin="0,0,8,0"/>
+                            <Button Content="{local:Loc Settings.Ai.RemoveKey}" Click="OnRemoveAiKey" Padding="12,6" FontSize="12.5"/>
+                        </StackPanel>
+                        <TextBlock Text="{Binding AiTestResult}" FontFamily="Segoe UI Semibold" FontSize="12.5" TextWrapping="Wrap" Margin="0,0,0,6"/>
+                        <TextBlock Style="{StaticResource Hint}" Text="{local:Loc Settings.Ai.PrivacyHint}"/>
+                        <TextBlock Style="{StaticResource Hint}" Text="{Binding AiSettingsPathText}" Margin="0,2,0,14"/>
+
                         <TextBlock Text="{local:Loc Settings.Planner}" Style="{StaticResource SectionTitle}"/>
                         <TextBlock Text="{Binding PlannerName}"/>
                         <TextBlock Style="{StaticResource Hint}" Margin="0,4,0,18"
@@ -582,7 +627,7 @@
                         <TextBlock Text="{local:Loc Settings.Legacy}" Style="{StaticResource SectionTitle}"/>
                         <Button Content="{local:Loc Settings.OpenLegacy}" Command="{Binding OpenLegacyToolCommand}" HorizontalAlignment="Left"/>
                         <TextBlock Style="{StaticResource Hint}" Margin="0,4,0,0" Text="{local:Loc Settings.LegacyHint}"/>
-                    </StackPanel>
+                    </StackPanel></ScrollViewer>
                 </Border>
             </TabItem>
         </TabControl>

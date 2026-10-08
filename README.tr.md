@@ -11,8 +11,8 @@
 - Açık belgeyi inceler, yapılacak işlemleri size **önce gösterir**, onayınızla CorelDRAW'da uygular.
 - Bir kez başarıyla yapılan işi **otomasyon** olarak kaydedip yeni değerlerle tekrarlayabilir.
 
-Henüz harici bir yapay zekâ servisine bağlı değildir. Komutları şimdilik küçük bir **test planlayıcısı** anlar;
-ileride yerini yapay zekâ planlayıcısı alacak ve uygulamanın geri kalanı değişmeyecek.
+Serbest Türkçe cümleleri bir **yapay zekâ planlayıcısı** plana çevirir (API anahtarı gerekir). Anahtar yoksa
+belirli komut kalıplarını anlayan **yerleşik test planlayıcısı** kullanılır.
 
 ```
 İstek ─► Planlayıcı ─► Plan (incelenebilir işlem listesi) ─► Uygulayıcı ─► CorelDRAW
@@ -57,6 +57,33 @@ C:\Cikti\is.pdf olarak PDF dışa aktar
   çift tırnakla (`"Logo"yu sil`) gösterebilirsiniz.
 - Türkçe ekler serbesttir: `shape_001'i`, `shape_001'ı`, `shape_001'in`, `shape_002'yi`, `shape_003'ün`.
 - İngilizce komutlar da çalışmaya devam eder (`Move shape_001 10 mm right`).
+
+## Yapay zekâ planlayıcısı
+
+Ayarlar > **Yapay Zekâ** bölümünden sağlayıcıyı, modeli ve API anahtarını girip **Kaydet**'e, ardından
+**Bağlantıyı Test Et**'e basın. Bundan sonra serbest Türkçe cümleler yazabilirsiniz:
+
+```
+Logoyu biraz küçült ve sağ üst köşeye al.
+Başlığı ortala ve 10 mm yukarı taşı.
+Üstteki başlığı PERSONEL GİRİŞİ olarak değiştir.
+Seçtiğim nesneleri eşit aralıklarla yatay dağıt.
+Bu sayfayı 50x70 cm yap.
+```
+
+- Yapay zekâ **yalnızca plan hazırlar**; CorelDRAW'a kendisi dokunmaz. Planı görür, **CORELDRAW'DA UYGULA**
+  düğmesine siz basarsınız. Silme ve kaydetmeden kapatma için ayrıca onay istenir.
+- Önce **Belgeyi İncele**'ye basın: yapay zekâ "logo", "başlık", "kırmızı daire" gibi ifadeleri belgedeki
+  nesnelerin adı, metni, rengi ve konumundan bulur.
+- Hangi nesneyi kastettiğiniz belirsizse rastgele seçmez, **soru sorar**; yanıtınızı yazıp yeniden
+  **Planı Hazırla**'ya basarsınız.
+- Yapay zekânın yanıtı uygulanmadan önce denetlenir: bilinmeyen işlem türü, tanınmayan alan, belgede
+  olmayan nesne kimliği veya doğrulamadan geçmeyen plan reddedilir.
+- API anahtarı Windows hesabınıza özel olarak şifrelenir (DPAPI) ve kullanıcı profilinizde saklanır;
+  proje klasörüne, depoya veya günlüklere yazılmaz. İsterseniz `ANTHROPIC_API_KEY` ortam değişkenini
+  kullanabilirsiniz.
+- Yapay zekâ yapılandırılmamışsa veya ulaşılamıyorsa **yerleşik test planlayıcısı** devreye girer.
+- İstek metni ile belgedeki nesnelerin adları, metinleri ve ölçüleri seçtiğiniz sağlayıcıya gönderilir.
 
 ## Otomasyonlar (reçeteler)
 
@@ -108,7 +135,8 @@ dotnet run --project CorelSignStudio.App
 
 ## Bilinen sınırlamalar
 
-- Yerleşik planlayıcı yalnızca belirli test komutlarını anlar; serbest cümleler için yapay zekâ planlayıcısı gerekir.
+- Yerleşik planlayıcı yalnızca belirli test komutlarını anlar; serbest cümleler için yapay zekâ planlayıcısı (API anahtarı) gerekir.
+- Yapay zekâ planlayıcısı görsel içeriği göremez: referans dosyalarının yalnızca adı ve türü iletilir.
 - JPG/PNG referanslar yalnızca görsel olarak içe aktarılır; düzenlenebilir vektöre çevirme henüz yoktur.
 - Düzenlemeler etkin sayfada yapılır.
 - PNG çıktısı sayfanın tamamını değil, sayfadaki çizimin kapladığı alanı içerir.
