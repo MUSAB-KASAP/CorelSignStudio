@@ -1,0 +1,18 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\CorelSignStudio.Domain\CorelSignStudio.Domain.csproj" />
+    <ProjectReference Include="..\CorelSignStudio.Corel\CorelSignStudio.Corel.csproj" />
+    <ProjectReference Include="..\CorelSignStudio.Templates\CorelSignStudio.Templates.csproj" />
+    <ProjectReference Include="..\CorelSignStudio.Storage\CorelSignStudio.Storage.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+  </PropertyGroup>
+
+</Project>
