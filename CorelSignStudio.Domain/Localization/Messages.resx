@@ -199,4 +199,33 @@
   <data name="Corel.ComFailure" xml:space="preserve"><value>CorelDRAW bu adımı uygulayamadı. CorelDRAW'da açık bir iletişim kutusu olmadığını ve nesnenin kilitli olmadığını kontrol edin.</value></data>
   <data name="Corel.CdrNotSaved" xml:space="preserve"><value>CDR dosyası kaydedilemedi: {0}</value></data>
   <data name="Corel.PdfNotExported" xml:space="preserve"><value>PDF dışa aktarılamadı: {0}</value></data>
+  <data name="Ai.Planner.Name" xml:space="preserve"><value>Yapay zekâ planlayıcısı</value></data>
+  <data name="Ai.Mode.Ai" xml:space="preserve"><value>Yapay Zekâ</value></data>
+  <data name="Ai.Mode.Deterministic" xml:space="preserve"><value>Yerleşik Test Planlayıcısı</value></data>
+  <data name="Ai.Error.Unknown" xml:space="preserve"><value>Yapay zekâ hizmetinde beklenmeyen bir sorun oluştu. Ayrıntılar günlük dosyasına yazıldı.</value></data>
+  <data name="Ai.Error.NotConfigured" xml:space="preserve"><value>Yapay zekâ yapılandırılmamış. Ayarlar sekmesinden sağlayıcıyı, modeli ve API anahtarını girin.</value></data>
+  <data name="Ai.Error.InvalidApiKey" xml:space="preserve"><value>API anahtarı geçersiz veya yetkisiz. Ayarlar sekmesinden anahtarı kontrol edin.</value></data>
+  <data name="Ai.Error.RateLimited" xml:space="preserve"><value>Yapay zekâ hizmeti şu anda çok fazla istek alıyor. Biraz bekleyip yeniden deneyin.</value></data>
+  <data name="Ai.Error.Timeout" xml:space="preserve"><value>Yapay zekâ hizmeti zamanında yanıt vermedi. Lütfen yeniden deneyin.</value></data>
+  <data name="Ai.Error.Network" xml:space="preserve"><value>Yapay zekâ hizmetine ulaşılamadı. İnternet bağlantınızı ve API ayarlarınızı kontrol edin.</value></data>
+  <data name="Ai.Error.ServiceUnavailable" xml:space="preserve"><value>Yapay zekâ hizmeti şu anda kullanılamıyor. Biraz sonra yeniden deneyin.</value></data>
+  <data name="Ai.Error.BadRequest" xml:space="preserve"><value>Yapay zekâ hizmeti isteği kabul etmedi. Ayarlar sekmesinden model adını kontrol edin.</value></data>
+  <data name="Ai.Error.ModelNotFound" xml:space="preserve"><value>Seçilen model bulunamadı. Ayarlar sekmesinden model adını kontrol edin.</value></data>
+  <data name="Ai.Error.Refused" xml:space="preserve"><value>Yapay zekâ bu isteği yanıtlamadı. İsteğinizi farklı biçimde yazmayı deneyin.</value></data>
+  <data name="Ai.Invalid.Malformed" xml:space="preserve"><value>Yapay zekânın yanıtı geçerli bir plan biçiminde değildi. Lütfen yeniden deneyin.</value></data>
+  <data name="Ai.Invalid.NoActions" xml:space="preserve"><value>Yapay zekâ uygulanabilir bir işlem üretmedi. İsteğinizi daha açık yazmayı deneyin.</value></data>
+  <data name="Ai.Invalid.UnsupportedAction" xml:space="preserve"><value>Yapay zekânın planındaki {0}. işlem desteklenmiyor veya hatalı ({1}). Plan uygulanmayacak.</value></data>
+  <data name="Ai.Invalid.UnknownField" xml:space="preserve"><value>Yapay zekânın planındaki {0}. işlemde ({1}) tanınmayan bir alan var: {2}. Plan uygulanmayacak.</value></data>
+  <data name="Ai.Invalid.UnknownShape" xml:space="preserve"><value>Yapay zekânın planı belgede bulunmayan bir nesneyi hedefliyor ({0}). Plan uygulanmayacak; belgeyi yeniden inceleyip tekrar deneyin.</value></data>
+  <data name="Ai.Invalid.NoDocumentForShape" xml:space="preserve"><value>Plan {0} nesnesini hedefliyor, ancak belge henüz incelenmedi. Önce “Belgeyi İncele” düğmesine basın.</value></data>
+  <data name="Ai.Invalid.Validation" xml:space="preserve"><value>Yapay zekânın hazırladığı plan doğrulamadan geçemedi ve uygulanmayacak: {0}</value></data>
+  <data name="Ai.Invalid.ClarificationEmpty" xml:space="preserve"><value>Yapay zekâ isteği yeterince açık bulmadı. Lütfen hangi nesneyi kastettiğinizi belirterek yeniden yazın.</value></data>
+  <data name="Ai.Invalid.CannotDo" xml:space="preserve"><value>Bu istek mevcut işlemlerle yapılamıyor: {0}</value></data>
+  <data name="Ai.Warning.Destructive" xml:space="preserve"><value>Bu plan nesne siliyor veya bir belgeyi kaydetmeden kapatıyor; uygulamadan önce onayınız istenecek.</value></data>
+  <data name="Ai.Warning.Overwrite" xml:space="preserve"><value>Var olan bir dosyanın üzerine yazılacak: {0}</value></data>
+  <data name="Ai.Warning.NothingSelected" xml:space="preserve"><value>Plan seçili nesneleri kullanıyor, ancak incelenen belgede seçili nesne görünmüyor. CorelDRAW'da nesneleri seçip belgeyi yeniden inceleyin.</value></data>
+  <data name="Ai.Warning.ContextClipped" xml:space="preserve"><value>Belge büyük olduğu için yapay zekâya {0} nesnenin ayrıntısı gönderildi; {1} nesne yalnızca özet olarak iletildi.</value></data>
+  <data name="Ai.Warning.LowConfidence" xml:space="preserve"><value>Yapay zekâ bu plandan çok emin değil; uygulamadan önce adımları dikkatle inceleyin.</value></data>
+  <data name="Ai.Warning.FallbackUsed" xml:space="preserve"><value>Yapay zekâ kullanılamadığı için yerleşik test planlayıcısı kullanıldı. ({0})</value></data>
+  <data name="Ai.Warning.NotUnderstood" xml:space="preserve"><value>Anlaşılamayan komutlar: {0}</value></data>
 </root>

@@ -16,7 +16,16 @@ public sealed record PlanningRequest
 
     public IReadOnlyList<ReferenceInput> References { get; init; } = [];
     public IReadOnlyDictionary<string, string> Parameters { get; init; } = new Dictionary<string, string>();
+
+    /// <summary>
+    /// Earlier turns of the same planning conversation, oldest first — typically the original request and
+    /// the planner's clarification question, with <see cref="UserRequest"/> being the user's answer.
+    /// </summary>
+    public IReadOnlyList<PlanningTurn> Conversation { get; init; } = [];
 }
+
+/// <summary>One earlier exchange: what the user asked and, if the planner needed more, what it asked back.</summary>
+public sealed record PlanningTurn(string UserText, string? PlannerQuestion = null);
 
 public sealed record PlanningResult
 {

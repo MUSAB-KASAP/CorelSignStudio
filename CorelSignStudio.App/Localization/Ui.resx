@@ -90,7 +90,7 @@ GENISLIK_MM = 500</value></data>
   <data name="Settings.Rollback" xml:space="preserve"><value>Hata durumunda işlemleri geri al (planın açık belgemde yaptığı tüm değişiklikler)</value></data>
   <data name="Settings.RollbackHint" xml:space="preserve"><value>Başarılı bir plan CorelDRAW'da her zaman tek bir Ctrl+Z adımıdır. Nesne silen veya belge kapatan planlar önce onay ister. Başarısız bir planın daha önce yazdığı dosyalar korunur.</value></data>
   <data name="Settings.Planner" xml:space="preserve"><value>Planlayıcı</value></data>
-  <data name="Settings.PlannerHint" xml:space="preserve"><value>Yerleşik planlayıcı yalnızca sınırlı sayıda test komutunu tanır. Yapay zekâ planlayıcısı, uygulamanın geri kalanı değişmeden buraya bağlanacak.</value></data>
+  <data name="Settings.PlannerHint" xml:space="preserve"><value>Şu anda kullanılan planlayıcı. Yapay zekâ yapılandırılmamışsa veya ulaşılamıyorsa yerleşik test planlayıcısı devreye girer; o yalnızca belirli komut kalıplarını anlar.</value></data>
   <data name="Settings.Data" xml:space="preserve"><value>Veriler</value></data>
   <data name="Settings.DataHint" xml:space="preserve"><value>Otomasyonlar, varlıklar ve geçmiş, okunabilir JSON dosyaları olarak şu klasörde saklanır:</value></data>
   <data name="Settings.Legacy" xml:space="preserve"><value>Eski Araç</value></data>
@@ -122,7 +122,6 @@ GENISLIK_MM = 500</value></data>
   <data name="Plan.TypeOrAttach" xml:space="preserve"><value>CorelDRAW'ın ne yapmasını istediğinizi yazın veya bir referans dosyası ekleyin.</value></data>
   <data name="Plan.ImportReferencesName" xml:space="preserve"><value>Referans dosyalarını içe aktar</value></data>
   <data name="Plan.ImportReferences" xml:space="preserve"><value>Komut yazılmadığı için plan, eklenen referans dosyalarını içe aktarır.</value></data>
-  <data name="Plan.NotUnderstood" xml:space="preserve"><value> Anlaşılamayan komutlar: {0}. (Yerleşik planlayıcı yalnızca birkaç test komutunu tanır; yerini yapay zekâ planlayıcısı alacak.)</value></data>
   <data name="Plan.Problems" xml:space="preserve"><value> Sorunlar: {0}</value></data>
   <data name="Plan.NeedsConfirmation" xml:space="preserve"><value>   ⚠ onay ister</value></data>
   <data name="Plan.FromRecipe" xml:space="preserve"><value>Plan '{0}' otomasyonundan hazırlandı. İnceleyip uygulayabilirsiniz.</value></data>
@@ -203,4 +202,30 @@ Devam etmek istiyor musunuz?</value></data>
   <data name="Error.NoWriteAccess" xml:space="preserve"><value>Bu klasöre yazma izni yok. Başka bir klasör seçin.</value></data>
   <data name="Error.FileAccess" xml:space="preserve"><value>Dosya okunamadı veya yazılamadı: {0}</value></data>
   <data name="Error.Unexpected" xml:space="preserve"><value>Beklenmeyen bir sorun oluştu. Teknik ayrıntılar günlük dosyasına yazıldı.</value></data>
+  <data name="Settings.Ai.Title" xml:space="preserve"><value>Yapay Zekâ</value></data>
+  <data name="Settings.Ai.Provider" xml:space="preserve"><value>SAĞLAYICI</value></data>
+  <data name="Settings.Ai.Model" xml:space="preserve"><value>MODEL</value></data>
+  <data name="Settings.Ai.ApiKey" xml:space="preserve"><value>API ANAHTARI</value></data>
+  <data name="Settings.Ai.PlannerMode" xml:space="preserve"><value>PLANLAYICI</value></data>
+  <data name="Settings.Ai.DebugLogs" xml:space="preserve"><value>Yapay zekâ hata ayıklama günlükleri (gönderilen ve alınan metinler günlük dosyasına yazılır)</value></data>
+  <data name="Settings.Ai.Save" xml:space="preserve"><value>Kaydet</value></data>
+  <data name="Settings.Ai.Test" xml:space="preserve"><value>Bağlantıyı Test Et</value></data>
+  <data name="Settings.Ai.RemoveKey" xml:space="preserve"><value>Kayıtlı Anahtarı Sil</value></data>
+  <data name="Settings.Ai.Key.Stored" xml:space="preserve"><value>Bu bilgisayarda şifreli olarak kayıtlı bir API anahtarı var. Değiştirmek için yenisini yazıp Kaydet'e basın.</value></data>
+  <data name="Settings.Ai.Key.Environment" xml:space="preserve"><value>API anahtarı {0} ortam değişkeninden okunuyor.</value></data>
+  <data name="Settings.Ai.Key.None" xml:space="preserve"><value>Henüz API anahtarı girilmedi. Anahtar girilene kadar yerleşik test planlayıcısı kullanılır.</value></data>
+  <data name="Settings.Ai.Saved" xml:space="preserve"><value>Yapay zekâ ayarları kaydedildi.</value></data>
+  <data name="Settings.Ai.SaveFailed" xml:space="preserve"><value>Yapay zekâ ayarları kaydedilemedi. Ayrıntılar günlük dosyasına yazıldı.</value></data>
+  <data name="Settings.Ai.KeyRemoved" xml:space="preserve"><value>Kayıtlı API anahtarı silindi.</value></data>
+  <data name="Settings.Ai.Testing" xml:space="preserve"><value>Bağlantı deneniyor…</value></data>
+  <data name="Settings.Ai.TestOk" xml:space="preserve"><value>Bağlantı başarılı. Model: {0}</value></data>
+  <data name="Settings.Ai.PrivacyHint" xml:space="preserve"><value>Yapay zekâ planlayıcısı kullanılırken yazdığınız istek ve açık belgedeki nesnelerin adları, metinleri ve ölçüleri seçtiğiniz sağlayıcıya gönderilir. API anahtarı Windows hesabınıza özel olarak şifrelenir; proje klasörüne veya günlüklere yazılmaz.</value></data>
+  <data name="Settings.Ai.StoredAt" xml:space="preserve"><value>Ayar dosyası: {0}</value></data>
+  <data name="Status.AiPlanning" xml:space="preserve"><value>Yapay zekâ plan hazırlıyor</value></data>
+  <data name="Status.AiTesting" xml:space="preserve"><value>Yapay zekâ bağlantısı deneniyor</value></data>
+  <data name="Status.NeedsAnswer" xml:space="preserve"><value>Yapay zekâ bir soru sordu — yanıtınızı yazıp “Planı Hazırla” düğmesine basın</value></data>
+  <data name="Plan.Clarification" xml:space="preserve"><value>Yapay zekâ soruyor: {0}  Yanıtınızı yukarıdaki kutuya yazıp yeniden “Planı Hazırla” düğmesine basın.</value></data>
+  <data name="Plan.Warnings" xml:space="preserve"><value>  Uyarılar: {0}</value></data>
+  <data name="Log.AiAsks" xml:space="preserve"><value>Yapay zekâ soruyor: {0}</value></data>
+  <data name="Log.AiSettingsSaved" xml:space="preserve"><value>Yapay zekâ ayarları kaydedildi. Etkin planlayıcı: {0}.</value></data>
 </root>

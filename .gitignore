@@ -10,3 +10,7 @@ TestResults/
 *.user
 *.suo
 data/
+# AI settings and keys live in the user profile; never commit a local copy.
+ai-settings.json
+*.apikey
+.env
