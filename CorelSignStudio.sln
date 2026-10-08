@@ -15,6 +15,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CorelSignStudio.Storage", "
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CorelSignStudio.Tests", "CorelSignStudio.Tests\CorelSignStudio.Tests.csproj", "{B63C4287-311D-427B-B61E-DDD9E96E978A}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CorelSignStudio.AI", "CorelSignStudio.AI\CorelSignStudio.AI.csproj", "{57AD067B-6C54-4B97-968A-5330F0404A4F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -48,5 +50,9 @@ Global
 		{B63C4287-311D-427B-B61E-DDD9E96E978A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B63C4287-311D-427B-B61E-DDD9E96E978A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B63C4287-311D-427B-B61E-DDD9E96E978A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{57AD067B-6C54-4B97-968A-5330F0404A4F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{57AD067B-6C54-4B97-968A-5330F0404A4F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{57AD067B-6C54-4B97-968A-5330F0404A4F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{57AD067B-6C54-4B97-968A-5330F0404A4F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
