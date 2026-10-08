@@ -1,16 +1,40 @@
 namespace CorelSignStudio.Domain;
 
+public enum TextFontWeight
+{
+    Normal,
+    SemiBold,
+    Bold,
+    Black,
+}
+
+public enum ElementHorizontalAlignment
+{
+    Left,
+    Center,
+    Right,
+}
+
+public enum ElementVerticalAlignment
+{
+    Top,
+    Center,
+    Bottom,
+}
+
 public abstract record DesignElement
 {
     public required string Id { get; init; }
-
     public required double XMm { get; init; }
-
     public required double YMm { get; init; }
-
+    public required double WidthMm { get; init; }
+    public required double HeightMm { get; init; }
+    public double RotationDegrees { get; init; }
+    public int ZIndex { get; init; }
+    public bool Visible { get; init; } = true;
     public FillStyle? Fill { get; init; }
-
     public StrokeStyle? Stroke { get; init; }
+    public double Opacity { get; init; } = 1;
 
     public virtual void Validate()
     {
@@ -21,8 +45,29 @@ public abstract record DesignElement
 
         ValidateFinite(XMm, nameof(XMm));
         ValidateFinite(YMm, nameof(YMm));
+        ValidateFinite(WidthMm, nameof(WidthMm));
+        ValidateFinite(HeightMm, nameof(HeightMm));
+        ValidateFinite(RotationDegrees, nameof(RotationDegrees));
+        ValidateFinite(Opacity, nameof(Opacity));
+
+        if (WidthMm < 0 || HeightMm < 0)
+        {
+            throw new DesignValidationException($"Element '{Id}' dimensions cannot be negative.");
+        }
+
+        if (Opacity is < 0 or > 1)
+        {
+            throw new DesignValidationException($"Element '{Id}' opacity must be between 0 and 1.");
+        }
+
         Stroke?.Validate();
         Fill?.Validate();
+    }
+
+    protected void ValidatePositiveBounds()
+    {
+        ValidatePositive(WidthMm, nameof(WidthMm));
+        ValidatePositive(HeightMm, nameof(HeightMm));
     }
 
     protected static void ValidatePositive(double value, string name)
@@ -46,16 +91,17 @@ public abstract record DesignElement
 public sealed record TextElement : DesignElement
 {
     public required string Text { get; init; }
-
     public required string FontFamily { get; init; }
-
-    public required double FontSizeMm { get; init; }
-
-    public bool Bold { get; init; }
+    public required double FontSizePt { get; init; }
+    public TextFontWeight FontWeight { get; init; } = TextFontWeight.Normal;
+    public ElementHorizontalAlignment HorizontalAlignment { get; init; } = ElementHorizontalAlignment.Left;
+    public ElementVerticalAlignment VerticalAlignment { get; init; } = ElementVerticalAlignment.Top;
+    public double LetterSpacing { get; init; }
 
     public override void Validate()
     {
         base.Validate();
+        ValidatePositiveBounds();
         if (string.IsNullOrWhiteSpace(Text))
         {
             throw new DesignValidationException($"Text element '{Id}' cannot be empty.");
@@ -66,23 +112,19 @@ public sealed record TextElement : DesignElement
             throw new DesignValidationException($"Text element '{Id}' must specify a font family.");
         }
 
-        ValidatePositive(FontSizeMm, nameof(FontSizeMm));
+        ValidatePositive(FontSizePt, nameof(FontSizePt));
+        ValidateFinite(LetterSpacing, nameof(LetterSpacing));
     }
 }
 
 public sealed record RectangleElement : DesignElement
 {
-    public required double WidthMm { get; init; }
-
-    public required double HeightMm { get; init; }
-
     public double CornerRadiusMm { get; init; }
 
     public override void Validate()
     {
         base.Validate();
-        ValidatePositive(WidthMm, nameof(WidthMm));
-        ValidatePositive(HeightMm, nameof(HeightMm));
+        ValidatePositiveBounds();
         ValidateFinite(CornerRadiusMm, nameof(CornerRadiusMm));
         if (CornerRadiusMm < 0)
         {
@@ -93,29 +135,23 @@ public sealed record RectangleElement : DesignElement
 
 public sealed record EllipseElement : DesignElement
 {
-    public required double WidthMm { get; init; }
-
-    public required double HeightMm { get; init; }
-
     public override void Validate()
     {
         base.Validate();
-        ValidatePositive(WidthMm, nameof(WidthMm));
-        ValidatePositive(HeightMm, nameof(HeightMm));
+        ValidatePositiveBounds();
     }
 }
 
+/// <summary>A line from (X, Y) to (X + Width, Y + Height), in millimetres.</summary>
 public sealed record LineElement : DesignElement
 {
-    public required double EndXMm { get; init; }
-
-    public required double EndYMm { get; init; }
-
     public override void Validate()
     {
         base.Validate();
-        ValidateFinite(EndXMm, nameof(EndXMm));
-        ValidateFinite(EndYMm, nameof(EndYMm));
+        if (WidthMm == 0 && HeightMm == 0)
+        {
+            throw new DesignValidationException($"Line element '{Id}' must have a non-zero length.");
+        }
     }
 }
 
@@ -123,25 +159,14 @@ public sealed record SvgElement : DesignElement
 {
     public required string AssetKey { get; init; }
 
-    public required double WidthMm { get; init; }
-
-    public required double HeightMm { get; init; }
-
     public override void Validate()
     {
         base.Validate();
-        ValidateAsset();
-    }
-
-    private void ValidateAsset()
-    {
+        ValidatePositiveBounds();
         if (string.IsNullOrWhiteSpace(AssetKey))
         {
             throw new DesignValidationException($"SVG element '{Id}' must specify an asset key.");
         }
-
-        ValidatePositive(WidthMm, nameof(WidthMm));
-        ValidatePositive(HeightMm, nameof(HeightMm));
     }
 }
 
@@ -149,20 +174,14 @@ public sealed record ImageElement : DesignElement
 {
     public required string AssetKey { get; init; }
 
-    public required double WidthMm { get; init; }
-
-    public required double HeightMm { get; init; }
-
     public override void Validate()
     {
         base.Validate();
+        ValidatePositiveBounds();
         if (string.IsNullOrWhiteSpace(AssetKey))
         {
             throw new DesignValidationException($"Image element '{Id}' must specify an asset key.");
         }
-
-        ValidatePositive(WidthMm, nameof(WidthMm));
-        ValidatePositive(HeightMm, nameof(HeightMm));
     }
 }
 

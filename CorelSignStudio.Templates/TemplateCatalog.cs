@@ -1,27 +1,25 @@
-using CorelSignStudio.Domain;
-
 namespace CorelSignStudio.Templates;
 
-/// <summary>
-/// Template registration point. Concrete MVP templates are added after the
-/// Corel connection milestone is verified.
-/// </summary>
 public sealed class TemplateCatalog
 {
-    private readonly Dictionary<string, Func<DesignSpec>> _factories = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, ISignTemplate> _templates;
 
-    public IReadOnlyCollection<string> Names => _factories.Keys;
-
-    public void Register(string name, Func<DesignSpec> factory)
+    public TemplateCatalog(IEnumerable<ISignTemplate> templates)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(name);
-        ArgumentNullException.ThrowIfNull(factory);
-        _factories.Add(name, factory);
+        ArgumentNullException.ThrowIfNull(templates);
+        _templates = templates.ToDictionary(template => template.Id, StringComparer.OrdinalIgnoreCase);
     }
 
-    public DesignSpec Create(string name) =>
-        _factories.TryGetValue(name, out var factory)
-            ? factory()
-            : throw new KeyNotFoundException($"Template '{name}' is not registered.");
+    public IReadOnlyList<ISignTemplate> Templates => _templates.Values.OrderBy(template => template.Name).ToArray();
+
+    public IReadOnlyList<ISignTemplate> GetByCategory(SignCategory category) =>
+        Templates.Where(template => template.Category == category).ToArray();
+
+    public ISignTemplate Get(string id) =>
+        _templates.TryGetValue(id, out var template)
+            ? template
+            : throw new KeyNotFoundException($"Template '{id}' is not registered.");
+
+    public static TemplateCatalog CreateDefault() => new([new ProhibitionSignTemplate()]);
 }
 

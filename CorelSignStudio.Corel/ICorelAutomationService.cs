@@ -12,6 +12,8 @@ public interface ICorelAutomationService : IAsyncDisposable
 
     Task ExportPdfAsync(string path, CancellationToken cancellationToken = default);
 
+    Task<CorelDocumentInfo> OpenCdrAsync(string path, CancellationToken cancellationToken = default);
+
     Task CloseAsync(CancellationToken cancellationToken = default);
 }
 
@@ -25,4 +27,6 @@ public sealed record CorelSaveResult(
     string Path,
     string RuntimeSignature,
     string InvocationShape);
+
+public sealed record CorelDocumentInfo(string Path, double WidthMm, double HeightMm);
 

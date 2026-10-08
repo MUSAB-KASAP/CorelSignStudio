@@ -32,6 +32,13 @@ public sealed record DesignSpec
             {
                 throw new DesignValidationException($"Element id '{element.Id}' is duplicated.");
             }
+
+            if (element.XMm < 0 || element.YMm < 0 ||
+                element.XMm + element.WidthMm > WidthMm + 0.001 ||
+                element.YMm + element.HeightMm > HeightMm + 0.001)
+            {
+                throw new DesignValidationException($"Element '{element.Id}' exceeds the design bounds.");
+            }
         }
     }
 }

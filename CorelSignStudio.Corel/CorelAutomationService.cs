@@ -10,7 +10,6 @@ public sealed class CorelAutomationService : ICorelAutomationService
 
     private const int CdrMillimeter = 3;
     private const int CdrFilterCdr = 1795;
-    private const double PointsPerMillimeter = 72d / 25.4d;
 
     private readonly StaThreadDispatcher _dispatcher = new("Corel Sign Studio COM STA");
     private readonly IDesignAssetResolver? _assetResolver;
@@ -88,7 +87,7 @@ public sealed class CorelAutomationService : ICorelAutomationService
             try
             {
                 page.SetSize(design.WidthMm, design.HeightMm);
-                foreach (var element in design.Elements)
+                foreach (var element in design.Elements.Where(element => element.Visible).OrderBy(element => element.ZIndex))
                 {
                     RenderElement(layer, document, design.HeightMm, element);
                 }
@@ -154,6 +153,39 @@ public sealed class CorelAutomationService : ICorelAutomationService
 
             WriteLog($"Exported PDF: {fullPath}.");
             return true;
+        }, cancellationToken);
+    }
+
+    public Task<CorelDocumentInfo> OpenCdrAsync(string path, CancellationToken cancellationToken = default)
+    {
+        var fullPath = Path.GetFullPath(path);
+        return ExecuteAsync("OpenCdr", () =>
+        {
+            EnsureConnected();
+            if (!File.Exists(fullPath))
+            {
+                throw new FileNotFoundException("CDR file was not found.", fullPath);
+            }
+
+            CloseDocumentCore();
+            dynamic application = _application!;
+            _document = application.OpenDocument(fullPath);
+            dynamic document = _document;
+            document.Unit = CdrMillimeter;
+            dynamic page = document.ActivePage;
+            try
+            {
+                var result = new CorelDocumentInfo(
+                    fullPath,
+                    Convert.ToDouble(page.SizeWidth, CultureInfo.InvariantCulture),
+                    Convert.ToDouble(page.SizeHeight, CultureInfo.InvariantCulture));
+                WriteLog($"Reopened CDR: {fullPath}; page={result.WidthMm} x {result.HeightMm} mm.");
+                return result;
+            }
+            finally
+            {
+                ReleaseComObject(page);
+            }
         }, cancellationToken);
     }
 
@@ -270,18 +302,10 @@ public sealed class CorelAutomationService : ICorelAutomationService
                 LineElement line => layer.CreateLineSegment(
                     line.XMm,
                     ToCorelY(pageHeightMm, line.YMm),
-                    line.EndXMm,
-                    ToCorelY(pageHeightMm, line.EndYMm)),
+                    line.XMm + line.WidthMm,
+                    ToCorelY(pageHeightMm, line.YMm + line.HeightMm)),
 
-                TextElement text => layer.CreateArtisticText(
-                    text.XMm,
-                    ToCorelY(pageHeightMm, text.YMm),
-                    text.Text,
-                    0,
-                    0,
-                    text.FontFamily,
-                    (float)(text.FontSizeMm * PointsPerMillimeter),
-                    text.Bold ? -1 : 0),
+                TextElement text => CreateText(layer, pageHeightMm, text),
 
                 SvgElement svg => ImportAsset(layer, document, pageHeightMm, svg.AssetKey, svg.XMm, svg.YMm, svg.WidthMm, svg.HeightMm),
                 ImageElement image => ImportAsset(layer, document, pageHeightMm, image.AssetKey, image.XMm, image.YMm, image.WidthMm, image.HeightMm),
@@ -289,6 +313,10 @@ public sealed class CorelAutomationService : ICorelAutomationService
             };
 
             ApplyStyle(shape, element);
+            if (element.RotationDegrees != 0)
+            {
+                ((dynamic)shape).Rotate(element.RotationDegrees);
+            }
         }
         finally
         {
@@ -324,8 +352,63 @@ public sealed class CorelAutomationService : ICorelAutomationService
         }
 
         dynamic shape = document.ActiveShape;
-        shape.SetSize(widthMm, heightMm);
-        shape.SetPosition(xMm, ToCorelY(pageHeightMm, yMm));
+        var currentWidth = Convert.ToDouble(shape.SizeWidth, CultureInfo.InvariantCulture);
+        var currentHeight = Convert.ToDouble(shape.SizeHeight, CultureInfo.InvariantCulture);
+        if (currentWidth <= 0 || currentHeight <= 0)
+        {
+            throw new InvalidOperationException($"Imported asset '{assetKey}' has invalid bounds.");
+        }
+
+        var fitScale = Math.Min(widthMm / currentWidth, heightMm / currentHeight);
+        shape.SetSize(currentWidth * fitScale, currentHeight * fitScale);
+        shape.CenterX = xMm + (widthMm / 2);
+        shape.CenterY = ToCorelY(pageHeightMm, yMm + (heightMm / 2));
+        return shape;
+    }
+
+    private static object CreateText(dynamic layer, double pageHeightMm, TextElement text)
+    {
+        dynamic shape = layer.CreateArtisticText(
+            0d,
+            0d,
+            text.Text,
+            0,
+            0,
+            text.FontFamily,
+            (float)text.FontSizePt,
+            text.FontWeight is TextFontWeight.Bold or TextFontWeight.Black ? -1 : 0);
+
+        var shapeWidth = Convert.ToDouble(shape.SizeWidth, CultureInfo.InvariantCulture);
+        var shapeHeight = Convert.ToDouble(shape.SizeHeight, CultureInfo.InvariantCulture);
+        if (shapeWidth > text.WidthMm || shapeHeight > text.HeightMm)
+        {
+            var fitScale = Math.Min(text.WidthMm / shapeWidth, text.HeightMm / shapeHeight);
+            shape.SetSize(shapeWidth * fitScale, shapeHeight * fitScale);
+            shapeWidth *= fitScale;
+            shapeHeight *= fitScale;
+        }
+
+        shape.CenterX = text.HorizontalAlignment switch
+        {
+            ElementHorizontalAlignment.Left => text.XMm + (shapeWidth / 2),
+            ElementHorizontalAlignment.Right => text.XMm + text.WidthMm - (shapeWidth / 2),
+            _ => text.XMm + (text.WidthMm / 2),
+        };
+
+        var boxTop = ToCorelY(pageHeightMm, text.YMm);
+        var boxBottom = ToCorelY(pageHeightMm, text.YMm + text.HeightMm);
+        shape.CenterY = text.VerticalAlignment switch
+        {
+            ElementVerticalAlignment.Top => boxTop - (shapeHeight / 2),
+            ElementVerticalAlignment.Bottom => boxBottom + (shapeHeight / 2),
+            _ => (boxTop + boxBottom) / 2,
+        };
+
+        if (text.LetterSpacing != 0)
+        {
+            shape.Text.Story.CharSpacing = text.LetterSpacing;
+        }
+
         return shape;
     }
 
@@ -336,12 +419,25 @@ public sealed class CorelAutomationService : ICorelAutomationService
             var (red, green, blue) = ParseRgb(element.Fill.ColorHex);
             shape.Fill.UniformColor.RGBAssign(red, green, blue);
         }
+        else if (element is RectangleElement or EllipseElement)
+        {
+            shape.Fill.ApplyNoFill();
+        }
 
         if (element.Stroke is not null)
         {
             var (red, green, blue) = ParseRgb(element.Stroke.ColorHex);
             shape.Outline.Color.RGBAssign(red, green, blue);
             shape.Outline.Width = element.Stroke.WidthMm;
+        }
+        else if (element is RectangleElement or EllipseElement or TextElement)
+        {
+            shape.Outline.SetNoOutline();
+        }
+
+        if (element.Opacity < 1)
+        {
+            shape.Transparency.ApplyUniformTransparency((int)Math.Round((1 - element.Opacity) * 100));
         }
     }
 
