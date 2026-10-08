@@ -1,5 +1,6 @@
 using CorelSignStudio.Domain.Automation;
 using CorelSignStudio.Domain.Inspection;
+using CorelSignStudio.Domain.Localization;
 
 namespace CorelSignStudio.Corel;
 
@@ -57,7 +58,7 @@ internal sealed class CorelAutomationSession(object applicationObject, Action<st
     private bool _documentCreatedByPlan;
 
     private dynamic Document =>
-        _document ?? throw new InvalidOperationException("No document is open in CorelDRAW. Open or create a document first.");
+        _document ?? throw new InvalidOperationException(Msg.Get("Corel.NoDocument"));
 
     private PageFrame Frame => PageFrame.Of(Document.ActivePage);
 
@@ -69,13 +70,12 @@ internal sealed class CorelAutomationSession(object applicationObject, Action<st
         }
 
         _document = (object?)_application.ActiveDocument
-                    ?? throw new InvalidOperationException(
-                        "No document is open in CorelDRAW. Open a document, or start the request by creating one.");
+                    ?? throw new InvalidOperationException(Msg.Get("Corel.NoDocumentStart"));
         dynamic document = _document;
         document.Unit = CorelShapes.UnitMillimeter;
         _initialSelection = ReadSelection(document);
 
-        document.BeginCommandGroup(string.IsNullOrWhiteSpace(plan.Name) ? "Corel AI Operator" : plan.Name);
+        document.BeginCommandGroup(string.IsNullOrWhiteSpace(plan.Name) ? Msg.Get("Corel.DefaultGroupName") : plan.Name);
         _groupOpen = true;
         try
         {
@@ -99,28 +99,39 @@ internal sealed class CorelAutomationSession(object applicationObject, Action<st
         if (_documentCreatedByPlan || _document is null)
         {
             EndGroup();
-            return new RollbackOutcome(false, _document is null
-                ? "No document changes to undo. Files written before the failure were kept."
-                : "The plan was working in a document it created or opened itself; that document was left open as-is. Files written before the failure were kept.");
+            return new RollbackOutcome(false, Msg.Get(_document is null ? "Corel.Rollback.NoDocument" : "Corel.Rollback.OwnDocument"));
         }
 
         if (!_groupOpen)
         {
-            return new RollbackOutcome(false, "No undo group was open; changes were kept.");
+            return new RollbackOutcome(false, Msg.Get("Corel.Rollback.NoGroup"));
         }
 
         var hadContent = _groupHasContent;
         EndGroup();
         if (!hadContent)
         {
-            return new RollbackOutcome(false, "Changes could not be grouped for undo; use Ctrl+Z in CorelDRAW if the document changed.");
+            return new RollbackOutcome(false, Msg.Get("Corel.Rollback.NotGrouped"));
         }
 
         Document.Undo(1);
-        return new RollbackOutcome(true, "All changes this plan made to the open document were undone. Files written before the failure were kept.");
+        return new RollbackOutcome(true, Msg.Get("Corel.Rollback.Done"));
     }
 
-    public ActionOutcome Execute(CorelAction action) => action switch
+    public ActionOutcome Execute(CorelAction action)
+    {
+        try
+        {
+            return ExecuteCore(action);
+        }
+        catch (System.Runtime.InteropServices.COMException exception)
+        {
+            // The raw COM text is rarely meaningful to a user; it is kept as the inner exception for the log.
+            throw new InvalidOperationException(Msg.Get("Corel.ComFailure"), exception);
+        }
+    }
+
+    private ActionOutcome ExecuteCore(CorelAction action) => action switch
     {
         CreateDocumentAction a => CreateDocument(a),
         OpenDocumentAction a => OpenDocument(a),
@@ -154,7 +165,7 @@ internal sealed class CorelAutomationSession(object applicationObject, Action<st
         ExportPdfAction a => ExportPdf(a),
         ExportPngAction a => ExportPng(a),
         ExportSvgAction a => ExportSvg(a),
-        _ => throw new NotSupportedException($"Action type '{action.TypeName}' is not supported by the CorelDRAW executor."),
+        _ => throw new NotSupportedException(Msg.Format("Corel.NotSupported", action.TypeName)),
     };
 
     // ---- Document -------------------------------------------------------------------------
@@ -168,7 +179,7 @@ internal sealed class CorelAutomationSession(object applicationObject, Action<st
         dynamic document = _document;
         document.Unit = CorelShapes.UnitMillimeter;
         document.ActivePage.SetSize(action.WidthMm, action.HeightMm);
-        return new ActionOutcome { Message = $"Created a {action.WidthMm:0.##} x {action.HeightMm:0.##} mm document." };
+        return new ActionOutcome { Message = Msg.Format("Corel.DocumentCreated", Msg.Number(action.WidthMm), Msg.Number(action.HeightMm)) };
     }
 
     private ActionOutcome OpenDocument(OpenDocumentAction action)
@@ -176,7 +187,7 @@ internal sealed class CorelAutomationSession(object applicationObject, Action<st
         var fullPath = Path.GetFullPath(action.FilePath);
         if (!File.Exists(fullPath))
         {
-            throw new FileNotFoundException($"The file '{fullPath}' was not found.", fullPath);
+            throw new FileNotFoundException(Msg.Format("Corel.FileNotFound", fullPath), fullPath);
         }
 
         EndGroup();
@@ -184,7 +195,7 @@ internal sealed class CorelAutomationSession(object applicationObject, Action<st
         _documentCreatedByPlan = true;
         _initialSelection = [];
         Document.Unit = CorelShapes.UnitMillimeter;
-        return new ActionOutcome { Message = $"Opened {fullPath}." };
+        return new ActionOutcome { Message = Msg.Format("Corel.DocumentOpened", fullPath) };
     }
 
     private ActionOutcome CloseDocument()
@@ -194,13 +205,13 @@ internal sealed class CorelAutomationSession(object applicationObject, Action<st
         document.Dirty = false; // Suppress the "save changes?" prompt; saving is a separate, explicit action.
         document.Close();
         _document = null;
-        return new ActionOutcome { Message = "Closed the document." };
+        return new ActionOutcome { Message = Msg.Get("Corel.DocumentClosed") };
     }
 
     private ActionOutcome SetPageSize(SetPageSizeAction action)
     {
         Document.ActivePage.SetSize(action.WidthMm, action.HeightMm);
-        return new ActionOutcome { Message = $"Page is now {action.WidthMm:0.##} x {action.HeightMm:0.##} mm." };
+        return new ActionOutcome { Message = Msg.Format("Corel.PageSizeSet", Msg.Number(action.WidthMm), Msg.Number(action.HeightMm)) };
     }
 
     // ---- Create ---------------------------------------------------------------------------
@@ -363,8 +374,8 @@ internal sealed class CorelAutomationSession(object applicationObject, Action<st
         var outcome = Created(action, (object)shape);
         return outcome with
         {
-            Message = $"Created a {action.Columns} x {action.Rows} table." +
-                      (skipped > 0 ? $" {skipped} cell(s) could not be formatted." : ""),
+            Message = Msg.Format("Corel.TableCreated", action.Columns, action.Rows) +
+                      (skipped > 0 ? Msg.Format("Corel.TableCellsSkipped", skipped) : ""),
         };
     }
 
@@ -373,7 +384,7 @@ internal sealed class CorelAutomationSession(object applicationObject, Action<st
         var fullPath = Path.GetFullPath(action.FilePath);
         if (!File.Exists(fullPath))
         {
-            throw new FileNotFoundException($"The file '{fullPath}' was not found.", fullPath);
+            throw new FileNotFoundException(Msg.Format("Corel.FileNotFound", fullPath), fullPath);
         }
 
         dynamic document = Document;
@@ -389,7 +400,7 @@ internal sealed class CorelAutomationSession(object applicationObject, Action<st
         int count = imported.Count;
         if (count == 0)
         {
-            throw new InvalidOperationException($"CorelDRAW imported nothing from '{fullPath}'.");
+            throw new InvalidOperationException(Msg.Format("Corel.ImportedNothing", fullPath));
         }
 
         dynamic shape = count == 1 ? imported[1] : imported.Group();
@@ -647,7 +658,7 @@ internal sealed class CorelAutomationSession(object applicationObject, Action<st
         var shapes = Resolve(action);
         if (shapes.Count < 2)
         {
-            throw new InvalidOperationException("Distribute needs at least two objects.");
+            throw new InvalidOperationException(Msg.Get("Corel.DistributeNeedsTwo"));
         }
 
         var horizontal = action.Direction == DistributeDirection.Horizontal;
@@ -723,7 +734,7 @@ internal sealed class CorelAutomationSession(object applicationObject, Action<st
             shape.Delete();
         }
 
-        return new ActionOutcome { ModifiedObjectIds = ids, Message = $"Deleted {ids.Length} object(s)." };
+        return new ActionOutcome { ModifiedObjectIds = ids, Message = Msg.Format("Corel.Deleted", ids.Length) };
     }
 
     private ActionOutcome Group(GroupAction action)
@@ -731,7 +742,7 @@ internal sealed class CorelAutomationSession(object applicationObject, Action<st
         var shapes = Resolve(action);
         if (shapes.Count < 2)
         {
-            throw new InvalidOperationException("Group needs at least two objects.");
+            throw new InvalidOperationException(Msg.Get("Corel.GroupNeedsTwo"));
         }
 
         dynamic range = _application.CreateShapeRange();
@@ -757,7 +768,7 @@ internal sealed class CorelAutomationSession(object applicationObject, Action<st
         {
             if ((int)shape.Type != CorelShapes.ShapeTypeGroup)
             {
-                throw new InvalidOperationException($"{CorelShapes.LogicalId(shape)} is not a group.");
+                throw new InvalidOperationException(Msg.Format("Corel.NotAGroup", (string)CorelShapes.LogicalId(shape)));
             }
 
             dynamic range = shape.UngroupEx();
@@ -775,7 +786,7 @@ internal sealed class CorelAutomationSession(object applicationObject, Action<st
     {
         var shapes = Resolve(action);
         dynamic layer = FindLayer(action.Layer)
-                        ?? throw new InvalidOperationException($"Layer '{action.Layer}' does not exist on the active page.");
+                        ?? throw new InvalidOperationException(Msg.Format("Corel.LayerMissing", action.Layer));
         foreach (dynamic shape in shapes)
         {
             shape.MoveToLayer(layer);
@@ -790,11 +801,11 @@ internal sealed class CorelAutomationSession(object applicationObject, Action<st
         if (existing is not null)
         {
             ((dynamic)existing).Activate();
-            return new ActionOutcome { Message = $"Layer '{action.Name}' already exists; it is now the active layer." };
+            return new ActionOutcome { Message = Msg.Format("Corel.LayerExists", action.Name) };
         }
 
         Document.ActivePage.CreateLayer(action.Name);
-        return new ActionOutcome { Message = $"Created layer '{action.Name}'; it is now the active layer." };
+        return new ActionOutcome { Message = Msg.Format("Corel.LayerCreated", action.Name) };
     }
 
     private ActionOutcome Rename(RenameObjectAction action)
@@ -890,8 +901,7 @@ internal sealed class CorelAutomationSession(object applicationObject, Action<st
         {
             if (shape is null)
             {
-                throw new InvalidOperationException(
-                    $"Target '{reference}' was not found in the document. Inspect the document again to refresh object ids.");
+                throw new InvalidOperationException(Msg.Format("Corel.TargetNotFound", reference));
             }
 
             if (seen.Add((int)((dynamic)shape).StaticID))
@@ -906,7 +916,7 @@ internal sealed class CorelAutomationSession(object applicationObject, Action<st
             {
                 if (_initialSelection.Count == 0)
                 {
-                    throw new InvalidOperationException("Nothing is selected in CorelDRAW. Select the objects first.");
+                    throw new InvalidOperationException(Msg.Get("Corel.NothingSelected"));
                 }
 
                 foreach (var staticId in _initialSelection)
@@ -918,7 +928,7 @@ internal sealed class CorelAutomationSession(object applicationObject, Action<st
             {
                 if (!_createdByAction.TryGetValue(TargetRef.ActionId(reference), out var ids) || ids.Count == 0)
                 {
-                    throw new InvalidOperationException($"Target '{reference}': that step did not create any objects.");
+                    throw new InvalidOperationException(Msg.Format("Corel.StepCreatedNothing", reference));
                 }
 
                 foreach (var staticId in ids)
@@ -932,7 +942,7 @@ internal sealed class CorelAutomationSession(object applicationObject, Action<st
                 int count = matches.Count;
                 if (count == 0)
                 {
-                    throw new InvalidOperationException($"No object named '{TargetRef.Name(reference)}' exists on the active page.");
+                    throw new InvalidOperationException(Msg.Format("Corel.NoObjectNamed", TargetRef.Name(reference)));
                 }
 
                 for (var index = 1; index <= count; index++)
@@ -946,7 +956,7 @@ internal sealed class CorelAutomationSession(object applicationObject, Action<st
             }
             else
             {
-                throw new InvalidOperationException($"Target '{reference}' is not a valid reference.");
+                throw new InvalidOperationException(Msg.Format("Corel.InvalidTarget", reference));
             }
         }
 
@@ -961,7 +971,7 @@ internal sealed class CorelAutomationSession(object applicationObject, Action<st
         }
 
         return FindLayer(layerName)
-               ?? throw new InvalidOperationException($"Layer '{layerName}' does not exist on the active page.");
+               ?? throw new InvalidOperationException(Msg.Format("Corel.LayerMissing", layerName));
     }
 
     private object? FindLayer(string layerName)
@@ -1037,8 +1047,8 @@ internal sealed class CorelAutomationSession(object applicationObject, Action<st
     {
         if ((int)shape.Type != CorelShapes.ShapeTypeText)
         {
-            throw new InvalidOperationException(
-                $"{CorelShapes.LogicalId(shape)} is a {CorelShapes.NativeTypeName((int)shape.Type)} object, not text.");
+            throw new InvalidOperationException(Msg.Format(
+                "Corel.NotText", (string)CorelShapes.LogicalId(shape), CorelShapes.NativeTypeName((int)shape.Type)));
         }
     }
 
@@ -1060,10 +1070,10 @@ internal sealed class CorelAutomationSession(object applicationObject, Action<st
     {
         if (!File.Exists(fullPath) || new FileInfo(fullPath).Length == 0)
         {
-            throw new IOException($"CorelDRAW reported success but did not create a non-empty file at '{fullPath}'.");
+            throw new IOException(Msg.Format("Corel.FileNotCreated", fullPath));
         }
 
-        return new ActionOutcome { ProducedFiles = [fullPath], Message = $"Wrote {fullPath}." };
+        return new ActionOutcome { ProducedFiles = [fullPath], Message = Msg.Format("Corel.FileWritten", fullPath) };
     }
 
     private ActionOutcome Created(CorelAction action, object shape) => Created(action, [shape]);

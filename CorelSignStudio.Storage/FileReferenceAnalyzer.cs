@@ -1,5 +1,6 @@
 using System.Buffers.Binary;
 using CorelSignStudio.Domain.References;
+using CorelSignStudio.Domain.Localization;
 
 namespace CorelSignStudio.Storage;
 
@@ -10,7 +11,7 @@ namespace CorelSignStudio.Storage;
 /// </summary>
 public sealed class FileReferenceAnalyzer : IReferenceAnalyzer
 {
-    public string Name => "File metadata";
+    public string Name => Msg.Get("Reference.Analyzer.Name");
 
     public bool CanAnalyze(ReferenceInput reference) => reference.FileType != ReferenceFileType.Unknown;
 
@@ -20,7 +21,7 @@ public sealed class FileReferenceAnalyzer : IReferenceAnalyzer
         var file = new FileInfo(reference.FilePath);
         if (!file.Exists)
         {
-            throw new FileNotFoundException("The reference file was not found.", reference.FilePath);
+            throw new FileNotFoundException(Msg.Format("Reference.NotFound", reference.FilePath), reference.FilePath);
         }
 
         var notes = new List<string>();
@@ -32,9 +33,7 @@ public sealed class FileReferenceAnalyzer : IReferenceAnalyzer
             pixelHeight = height;
         }
 
-        notes.Add(reference.IsVector
-            ? "Vector file: its objects can be imported and edited directly instead of being redrawn."
-            : "Bitmap file: recreating it as editable vector objects needs the AI visual analyzer (not connected yet).");
+        notes.Add(Msg.Get(reference.IsVector ? "Reference.Note.Vector" : "Reference.Note.Bitmap"));
 
         return Task.FromResult(new ReferenceAnalysis
         {

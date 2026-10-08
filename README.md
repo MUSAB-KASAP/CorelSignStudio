@@ -1,5 +1,7 @@
 # Corel AI Operator (Corel Sign Studio)
 
+*Türkçe: [README.tr.md](README.tr.md)*
+
 A .NET 8 WPF control centre that drives **CorelDRAW 2026** through late-bound COM automation.
 CorelDRAW stays the design workspace; this application inspects the open document, shows a plan of
 operations for review, executes it, and can replay successful jobs as recipes and batches.
@@ -47,6 +49,16 @@ Recipe + rows  ─► BatchExpander ─► one AutomationPlan per row ─► Bat
   documents a plan created or opened itself, are not rolled back.
 - **Recipes:** any value in a plan can be a `{{VARIABLE}}`; Number/Boolean variables become real JSON values,
   so sizes and counts can be variables too.
+
+## Language
+
+The user interface is Turkish (`tr-TR`) by default. User-facing text is not hard-coded:
+
+- `CorelSignStudio.App/Localization/Ui.resx` — window texts, used from XAML as `{local:Loc Key}` and from view models as `Ui.T/Ui.F`.
+- `CorelSignStudio.Domain/Localization/Messages.resx` — plan step descriptions, validation, execution and planner messages (`Msg.Get/Msg.Format`).
+
+To add English, add `Ui.en-US.resx` and `Messages.en-US.resx` and set `Msg.Culture` at start-up. Type names, JSON
+contracts and technical log lines stay in English. The test planner understands Turkish and English commands.
 
 ## Running
 

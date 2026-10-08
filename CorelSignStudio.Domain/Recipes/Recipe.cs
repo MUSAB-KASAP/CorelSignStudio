@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using CorelSignStudio.Domain.Automation;
+using CorelSignStudio.Domain.Localization;
 
 namespace CorelSignStudio.Domain.Recipes;
 
@@ -85,7 +86,7 @@ public sealed record Recipe
         }
         catch (JsonException exception)
         {
-            throw new RecipeVariableException(Name, [$"The filled-in recipe is not a valid plan: {exception.Message}"]);
+            throw new RecipeVariableException(Name, [Msg.Format("Recipe.NotValidPlan", exception.Message)]);
         }
     }
 
@@ -114,7 +115,7 @@ public sealed record Recipe
 }
 
 public sealed class RecipeVariableException(string recipeName, IReadOnlyList<string> errors)
-    : Exception($"Recipe '{recipeName}' could not be filled in: {string.Join("; ", errors)}")
+    : Exception(Msg.Format("Recipe.CouldNotFill", recipeName, string.Join("; ", errors)))
 {
     public IReadOnlyList<string> Errors { get; } = errors;
 }
@@ -132,7 +133,7 @@ public static class VariableSubstitution
                 return value;
             }
 
-            Report(errors, $"Variable '{name}' has no value.");
+            Report(errors, Msg.Format("Recipe.VariableNoValue", name));
             return match.Value;
         });
 
@@ -204,7 +205,7 @@ public static class VariableSubstitution
                     case RecipeVariableType.Boolean when TryParseBoolean(raw, out var boolean):
                         return JsonValue.Create(boolean);
                     default:
-                        Report(errors, $"Variable '{name}' must be a {type.ToString().ToLowerInvariant()} but was '{raw}'.");
+                        Report(errors, Msg.Format("Recipe.VariableWrongType", name, Msg.Get("Recipe.Type." + type), raw));
                         return JsonValue.Create(text);
                 }
             }
@@ -306,12 +307,12 @@ public static class RecipeBuilder
             var variableName = NormalizeName(binding.VariableName);
             if (string.IsNullOrEmpty(binding.Literal))
             {
-                throw new ArgumentException($"Binding '{variableName}' needs the literal value to replace.", nameof(bindings));
+                throw new ArgumentException(Msg.Format("Recipe.BindingNeedsLiteral", variableName));
             }
 
             if (variables.Any(variable => variable.Name == variableName))
             {
-                throw new ArgumentException($"Variable '{variableName}' is bound more than once.", nameof(bindings));
+                throw new ArgumentException(Msg.Format("Recipe.BoundTwice", variableName));
             }
 
             var placeholder = PlaceholderSyntax.Format(variableName);
@@ -332,8 +333,7 @@ public static class RecipeBuilder
 
             if (replaced == 0)
             {
-                throw new ArgumentException(
-                    $"The value '{binding.Literal}' for variable '{variableName}' does not appear in the plan.", nameof(bindings));
+                throw new ArgumentException(Msg.Format("Recipe.LiteralNotInPlan", binding.Literal, variableName));
             }
 
             variables.Add(new RecipeVariable

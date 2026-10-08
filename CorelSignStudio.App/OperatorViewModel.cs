@@ -6,6 +6,7 @@ using CorelSignStudio.Domain.Assets;
 using CorelSignStudio.Domain.Automation;
 using CorelSignStudio.Domain.Batch;
 using CorelSignStudio.Domain.Inspection;
+using CorelSignStudio.Domain.Localization;
 using CorelSignStudio.Domain.Planning;
 using CorelSignStudio.Domain.Recipes;
 using CorelSignStudio.Domain.References;
@@ -24,8 +25,8 @@ public sealed class RecipeVariableRow(RecipeVariable variable) : ObservableObjec
     private string _value = variable.DefaultValue ?? "";
 
     public string Name { get; } = variable.Name;
-    public string Type { get; } = variable.Type.ToString();
-    public string Description { get; } = variable.Description ?? (variable.IsRequired ? "Required" : "");
+    public string Type { get; } = Ui.T("Recipe.Type." + variable.Type);
+    public string Description { get; } = variable.Description ?? (variable.IsRequired ? Ui.T("Recipe.Required") : "");
     public string Value { get => _value; set => SetProperty(ref _value, value); }
 }
 
@@ -57,11 +58,11 @@ public sealed class OperatorViewModel : ObservableObject
 
     private bool _isBusy;
     private bool _isConnected;
-    private string _connectionText = "Not connected";
-    private string _activeDocumentText = "No document inspected yet. Press Inspect Document.";
-    private string _statusMessage = "Ready";
+    private string _connectionText = Ui.T("Connection.NotConnected");
+    private string _activeDocumentText = Ui.T("Document.NotInspected");
+    private string _statusMessage = Ui.T("Status.Ready");
     private string _request = "";
-    private string _planMessage = "No plan yet. Type a request and press Prepare Plan.";
+    private string _planMessage = Ui.T("Plan.None");
     private string _recipeName = "";
     private string _recipeVariables = "";
     private int _selectedTabIndex;
@@ -81,7 +82,7 @@ public sealed class OperatorViewModel : ObservableObject
     private bool _batchPng;
     private bool _batchSvg;
     private double _batchPercent;
-    private string _batchStatus = "Choose a recipe and a CSV file.";
+    private string _batchStatus = Ui.T("Batch.Status.Initial");
     private CancellationTokenSource? _batchCancellation;
     private Asset? _selectedAsset;
     private string _assetSearch = "";
@@ -99,7 +100,7 @@ public sealed class OperatorViewModel : ObservableObject
         PreparePlanCommand = Async(PreparePlanAsync);
         ExecuteCommand = Async(ExecutePlanAsync, () => _plan is not null);
         SaveRecipeCommand = Command(SaveRecipe, () => (_lastSuccessfulPlan ?? _plan) is not null && !string.IsNullOrWhiteSpace(RecipeName));
-        ClearPlanCommand = Command(() => SetPlan(null, "Plan cleared."), () => _plan is not null);
+        ClearPlanCommand = Command(() => SetPlan(null, Ui.T("Plan.Cleared")), () => _plan is not null);
         AddReferenceCommand = Command(BrowseReferences);
         RemoveReferenceCommand = Command(() => References.Remove(SelectedReference!), () => SelectedReference is not null);
         InsertShapeIdCommand = Command(InsertSelectedShapeId, () => SelectedShape is not null);
@@ -127,7 +128,7 @@ public sealed class OperatorViewModel : ObservableObject
         RefreshRecipes();
         RefreshAssets();
         RefreshHistory();
-        AddLog("Corel AI Operator is ready. CorelDRAW stays your design workspace; this window sends it instructions.");
+        AddLog(Ui.T("Log.Ready"));
     }
 
     public event Action? OpenLegacyToolRequested;
@@ -198,6 +199,7 @@ public sealed class OperatorViewModel : ObservableObject
     public string DataFolder => _services.DataFolder;
     public string PlannerName => _services.Planner.Name;
     public string LogPath => _services.FileLog.LogPath;
+    public string LogFileText => Ui.F("Settings.LogFile", _services.FileLog.LogPath);
 
     public string RecipeName
     {
@@ -270,10 +272,10 @@ public sealed class OperatorViewModel : ObservableObject
     }
 
     public string BatchRecipeHint => BatchRecipe is null
-        ? "The CSV's first line must contain the recipe's variable names."
+        ? Ui.T("Batch.Hint.NoRecipe")
         : BatchRecipe.Variables.Count == 0
-            ? "This recipe has no variables; every row produces the same result."
-            : "CSV columns expected: " + string.Join(", ", BatchRecipe.Variables.Select(variable => variable.Name));
+            ? Ui.T("Batch.Hint.NoVariables")
+            : Ui.F("Batch.Hint.Columns", string.Join(", ", BatchRecipe.Variables.Select(variable => variable.Name)));
 
     public string BatchCsvPath { get => _batchCsvPath; set => SetProperty(ref _batchCsvPath, value); }
     public string BatchNamePattern { get => _batchNamePattern; set => SetProperty(ref _batchNamePattern, value); }
@@ -336,7 +338,7 @@ public sealed class OperatorViewModel : ObservableObject
                 if (References.All(existing => !string.Equals(existing.FilePath, reference.FilePath, StringComparison.OrdinalIgnoreCase)))
                 {
                     References.Add(reference);
-                    AddLog($"Reference added: {reference.FileName} ({reference.FileType}{(reference.IsVector ? ", vector — can be reused directly" : ", bitmap")}).");
+                    AddLog(Ui.F("Log.ReferenceAdded", reference.FileName, reference.FileTypeLabel, Ui.T(reference.IsVector ? "Log.ReferenceVector" : "Log.ReferenceBitmap")));
                 }
             }
             catch (NotSupportedException exception)
@@ -348,7 +350,7 @@ public sealed class OperatorViewModel : ObservableObject
 
     private async Task ConnectAsync()
     {
-        await RunBusyAsync("Connecting to CorelDRAW", EnsureConnectedAsync);
+        await RunBusyAsync(Ui.T("Status.Connecting"), EnsureConnectedAsync);
     }
 
     private async Task EnsureConnectedAsync()
@@ -356,16 +358,16 @@ public sealed class OperatorViewModel : ObservableObject
         // Always (re)connect: it is cheap, and it recovers when the user closed and reopened CorelDRAW.
         var connection = await _services.Corel.ConnectAsync(visible: true);
         IsConnected = true;
-        ConnectionText = $"Connected — CorelDRAW {connection.Version}";
+        ConnectionText = Ui.F("Connection.Connected", connection.Version);
     }
 
-    private Task InspectAsync() => RunBusyAsync("Inspecting the active document", async () =>
+    private Task InspectAsync() => RunBusyAsync(Ui.T("Status.Inspecting"), async () =>
     {
         await EnsureConnectedAsync();
         await RefreshSnapshotAsync();
         AddLog(_snapshot is null
-            ? "CorelDRAW has no open document."
-            : $"Inspected '{_snapshot.Title}': {_snapshot.ShapeCount} object(s).");
+            ? Ui.T("Log.NoDocument")
+            : Ui.F("Log.Inspected", _snapshot.Title, _snapshot.ShapeCount));
     });
 
     private async Task RefreshSnapshotAsync()
@@ -374,19 +376,19 @@ public sealed class OperatorViewModel : ObservableObject
         Shapes.Clear();
         if (_snapshot is null)
         {
-            ActiveDocumentText = "No document is open in CorelDRAW.";
+            ActiveDocumentText = Ui.T("Document.NoneOpen");
             return;
         }
 
         var page = _snapshot.ActivePage;
         ActiveDocumentText =
-            $"Active document: {_snapshot.Title}   |   {Mm(page?.WidthMm ?? 0)} x {Mm(page?.HeightMm ?? 0)} mm   |   {_snapshot.ShapeCount} object(s)" +
-            (_snapshot.SelectedShapeIds.Count > 0 ? $"   |   {_snapshot.SelectedShapeIds.Count} selected" : "");
+            Ui.F("Document.Summary", _snapshot.Title, Mm(page?.WidthMm ?? 0), Mm(page?.HeightMm ?? 0), _snapshot.ShapeCount) +
+            (_snapshot.SelectedShapeIds.Count > 0 ? Ui.F("Document.SummarySelected", _snapshot.SelectedShapeIds.Count) : "");
         foreach (var shape in _snapshot.AllShapes())
         {
             Shapes.Add(new ShapeRow(
                 shape.Id,
-                shape.Type.ToString(),
+                Msg.Get("ShapeKind." + shape.Type),
                 shape.Name ?? "",
                 shape.Text?.ReplaceLineEndings(" ") ?? "",
                 Mm(shape.Bounds.XMm),
@@ -398,13 +400,13 @@ public sealed class OperatorViewModel : ObservableObject
         }
     }
 
-    private Task PreparePlanAsync() => RunBusyAsync("Preparing a plan", async () =>
+    private Task PreparePlanAsync() => RunBusyAsync(Ui.T("Status.Planning"), async () =>
     {
         if (string.IsNullOrWhiteSpace(Request))
         {
             if (References.Count == 0)
             {
-                SetPlan(null, "Type what CorelDRAW should do, or attach a reference file.");
+                SetPlan(null, Ui.T("Plan.TypeOrAttach"));
                 return;
             }
 
@@ -415,7 +417,7 @@ public sealed class OperatorViewModel : ObservableObject
                 var analysis = await _services.ReferenceAnalyzer.AnalyzeAsync(reference);
                 foreach (var note in analysis.Notes)
                 {
-                    AddLog($"{reference.FileName}: {note}");
+                    AddLog(Ui.F("Log.ReferenceNote", reference.FileName, note));
                 }
 
                 var import = _services.ReferencePlanBuilder.BuildPlan(reference, analysis).Actions[0];
@@ -425,12 +427,12 @@ public sealed class OperatorViewModel : ObservableObject
             SetPlan(
                 new AutomationPlan
                 {
-                    Name = "Import reference files",
+                    Name = Ui.T("Plan.ImportReferencesName"),
                     Target = actions[0].OpensDocument ? DocumentTarget.NewDocument : DocumentTarget.ActiveDocument,
                     Actions = actions,
                     ReferenceFiles = References.ToArray(),
                 },
-                "No instruction was typed, so the plan imports the attached reference files.");
+                Ui.T("Plan.ImportReferences"));
             return;
         }
 
@@ -443,8 +445,7 @@ public sealed class OperatorViewModel : ObservableObject
         var message = result.Message ?? "";
         if (result.UnrecognizedCommands.Count > 0)
         {
-            message += " Not understood: " + string.Join(" | ", result.UnrecognizedCommands) +
-                       ". (The built-in planner only knows a few test commands; the AI planner will replace it.)";
+            message += Ui.F("Plan.NotUnderstood", string.Join(" | ", result.UnrecognizedCommands));
         }
 
         SetPlan(result.Plan, message);
@@ -459,42 +460,40 @@ public sealed class OperatorViewModel : ObservableObject
             for (var index = 0; index < plan.Actions.Count; index++)
             {
                 var action = plan.Actions[index];
-                ProposedOperations.Add($"{index + 1}. {ActionDescriber.Describe(action)}{(action.IsDestructive ? "   ⚠ asks for confirmation" : "")}");
+                ProposedOperations.Add($"{index + 1}. {ActionDescriber.Describe(action)}{(action.IsDestructive ? Ui.T("Plan.NeedsConfirmation") : "")}");
             }
 
             var validation = plan.Validate();
             if (!validation.IsValid)
             {
-                message += " Problems: " + string.Join("; ", validation.Errors);
+                message += Ui.F("Plan.Problems", string.Join("; ", validation.Errors));
             }
         }
 
         PlanMessage = message;
-        StatusMessage = plan is null ? "No plan" : $"Plan ready: {plan.Actions.Count} operation(s)";
+        StatusMessage = plan is null ? Ui.T("Status.NoPlan") : Ui.F("Status.PlanReady", plan.Actions.Count);
         RaiseCommandStates();
     }
 
-    private Task ExecutePlanAsync() => RunBusyAsync("Executing in CorelDRAW", async () =>
+    private Task ExecutePlanAsync() => RunBusyAsync(Ui.T("Status.Executing"), async () =>
     {
         var plan = _plan!;
         if (plan.HasDestructiveActions && !_services.Shell.Confirm(
-                "This plan deletes objects or closes a document without saving:\n\n" +
-                string.Join("\n", plan.Actions.Where(action => action.IsDestructive).Select(ActionDescriber.Describe)) +
-                "\n\nContinue?",
-                "Confirm destructive operations"))
+                Ui.F("Confirm.Destructive", string.Join("\n", plan.Actions.Where(action => action.IsDestructive).Select(ActionDescriber.Describe))),
+                Ui.T("Confirm.DestructiveTitle")))
         {
-            AddLog("Execution cancelled by the user.");
+            AddLog(Ui.T("Log.ExecutionCancelled"));
             return;
         }
 
         await EnsureConnectedAsync();
-        AddLog($"Executing '{plan.Name}' ({plan.Actions.Count} operation(s))…");
+        AddLog(Ui.F("Log.Executing", plan.Name, plan.Actions.Count));
         var progress = new Progress<ActionProgress>(report =>
         {
             if (report.Result is { } step)
             {
-                AddLog($"  {(step.Success ? "✓" : "✗")} {report.Index}/{report.Total} {ActionDescriber.Describe(report.Action)}" +
-                       (step.Error is null ? "" : $" — {step.Error}"));
+                AddLog(Ui.F("Log.Step", step.Success ? "✓" : "✗", report.Index, report.Total, ActionDescriber.Describe(report.Action)) +
+                       (step.Error is null ? "" : Ui.F("Log.StepError", step.Error)));
             }
         });
 
@@ -510,24 +509,24 @@ public sealed class OperatorViewModel : ObservableObject
                 RecipeName = plan.Name;
             }
 
-            AddLog($"Done in {result.Duration.TotalSeconds:0.0} s. {result.Summary}");
+            AddLog(Ui.F("Log.Done", result.Duration.TotalSeconds.ToString("0.0", Msg.Culture), result.Summary));
             foreach (var file in result.ProducedFiles)
             {
-                AddLog($"  File: {file}");
+                AddLog(Ui.F("Log.File", file));
             }
 
-            StatusMessage = "Completed";
+            StatusMessage = Ui.T("Status.Completed");
         }
         else
         {
-            AddLog($"Failed: {result.Summary}");
+            AddLog(Ui.F("Log.Failed", result.Summary));
             if (result.RollbackNote is not null)
             {
-                AddLog($"  {result.RollbackNote}");
+                AddLog(Ui.F("Log.Detail", result.RollbackNote));
             }
 
             _services.FileLog.Write($"Plan '{plan.Name}' failed: {result.ErrorDetails}");
-            StatusMessage = "Failed — see Activity";
+            StatusMessage = Ui.T("Status.Failed");
         }
 
         await RefreshSnapshotAsync();
@@ -544,7 +543,7 @@ public sealed class OperatorViewModel : ObservableObject
                 var separator = line.IndexOf('=');
                 if (separator <= 0 || separator == line.Length - 1)
                 {
-                    throw new ArgumentException($"Variable line '{line}' must look like NAME = value.");
+                    throw new ArgumentException(Ui.F("Recipe.VariableLineInvalid", line));
                 }
 
                 bindings.Add(new RecipeVariableBinding(line[..separator].Trim(), line[(separator + 1)..].Trim()));
@@ -554,7 +553,7 @@ public sealed class OperatorViewModel : ObservableObject
             var existing = _services.Recipes.FindByName(recipe.Name);
             if (existing is not null)
             {
-                if (!_services.Shell.Confirm($"A recipe named '{recipe.Name}' already exists. Replace it?", "Replace recipe"))
+                if (!_services.Shell.Confirm(Ui.F("Confirm.ReplaceRecipe", recipe.Name), Ui.T("Confirm.ReplaceRecipeTitle")))
                 {
                     return;
                 }
@@ -564,12 +563,12 @@ public sealed class OperatorViewModel : ObservableObject
 
             _services.Recipes.Save(recipe);
             RefreshRecipes();
-            AddLog($"Saved recipe '{recipe.Name}' with {recipe.Variables.Count} variable(s)" +
-                   (recipe.Variables.Count > 0 ? ": " + string.Join(", ", recipe.Variables.Select(variable => variable.Name)) : "") + ".");
+            AddLog(Ui.F("Log.RecipeSaved", recipe.Name, recipe.Variables.Count,
+                recipe.Variables.Count > 0 ? ": " + string.Join(", ", recipe.Variables.Select(variable => variable.Name)) : ""));
         }
         catch (ArgumentException exception)
         {
-            AddLog("Recipe not saved: " + exception.Message);
+            AddLog(Ui.F("Log.RecipeNotSaved", exception.Message));
         }
     }
 
@@ -595,8 +594,8 @@ public sealed class OperatorViewModel : ObservableObject
 
     private void BrowseReferences() =>
         AddReferences(_services.Shell.BrowseForFiles(
-            "Choose reference files",
-            "Design and image files|*.cdr;*.pdf;*.svg;*.jpg;*.jpeg;*.png|All files|*.*",
+            Ui.T("Dialog.ReferencesTitle"),
+            Ui.T("Dialog.ReferencesFilter"),
             multiple: true));
 
     private void InsertSelectedShapeId()
@@ -629,24 +628,24 @@ public sealed class OperatorViewModel : ObservableObject
                 .Where(row => !string.IsNullOrWhiteSpace(row.Value))
                 .ToDictionary(row => row.Name, row => row.Value);
             var plan = SelectedRecipe!.Instantiate(values);
-            SetPlan(plan, $"Plan prepared from recipe '{SelectedRecipe.Name}'. Review it, then execute.");
+            SetPlan(plan, Ui.F("Plan.FromRecipe", SelectedRecipe.Name));
             SelectedTabIndex = 0;
         }
         catch (RecipeVariableException exception)
         {
             AddLog(exception.Message);
-            StatusMessage = "Recipe needs more values — see Activity";
+            StatusMessage = Ui.T("Status.RecipeNeedsValues");
         }
     }
 
     private void DeleteSelectedRecipe()
     {
         var recipe = SelectedRecipe!;
-        if (_services.Shell.Confirm($"Delete the recipe '{recipe.Name}'?", "Delete recipe"))
+        if (_services.Shell.Confirm(Ui.F("Confirm.DeleteRecipe", recipe.Name), Ui.T("Confirm.DeleteRecipeTitle")))
         {
             _services.Recipes.Delete(recipe.Id);
             RefreshRecipes();
-            AddLog($"Deleted recipe '{recipe.Name}'.");
+            AddLog(Ui.F("Log.RecipeDeleted", recipe.Name));
         }
     }
 
@@ -654,7 +653,7 @@ public sealed class OperatorViewModel : ObservableObject
 
     private void BrowseBatchCsv()
     {
-        var file = _services.Shell.BrowseForFiles("Choose a CSV file", "CSV files|*.csv;*.txt|All files|*.*", multiple: false).FirstOrDefault();
+        var file = _services.Shell.BrowseForFiles(Ui.T("Dialog.CsvTitle"), Ui.T("Dialog.CsvFilter"), multiple: false).FirstOrDefault();
         if (file is not null)
         {
             BatchCsvPath = file;
@@ -670,13 +669,13 @@ public sealed class OperatorViewModel : ObservableObject
         {
             if (BatchRecipe is null)
             {
-                BatchStatus = "Choose a recipe first.";
+                BatchStatus = Ui.T("Batch.Status.ChooseRecipe");
                 return null;
             }
 
             if (!File.Exists(BatchCsvPath))
             {
-                BatchStatus = "Choose a CSV file.";
+                BatchStatus = Ui.T("Batch.Status.ChooseCsv");
                 return null;
             }
 
@@ -687,13 +686,13 @@ public sealed class OperatorViewModel : ObservableObject
             if (BatchSvg) formats.Add(OutputFormat.Svg);
             if (formats.Count == 0)
             {
-                BatchStatus = "Choose at least one output format.";
+                BatchStatus = Ui.T("Batch.Status.ChooseFormat");
                 return null;
             }
 
             var job = new BatchJob
             {
-                Name = $"{BatchRecipe.Name} batch",
+                Name = Ui.F("Batch.JobName", BatchRecipe.Name),
                 RecipeId = BatchRecipe.Id,
                 Rows = CsvBatchReader.ReadFile(BatchCsvPath),
                 OutputFolder = OutputFolder,
@@ -703,20 +702,20 @@ public sealed class OperatorViewModel : ObservableObject
             var items = BatchExpander.Expand(job, BatchRecipe);
             foreach (var item in items)
             {
-                BatchRows.Add(new BatchPreviewRow(item.RowNumber, item.OutputBaseName ?? "", item.IsValid ? "Ready" : "Problem: " + item.Error));
+                BatchRows.Add(new BatchPreviewRow(item.RowNumber, item.OutputBaseName ?? "", item.IsValid ? Ui.T("Batch.Row.Ready") : Ui.F("Batch.Row.Problem", item.Error)));
             }
 
-            BatchStatus = $"{items.Count} row(s): {items.Count(item => item.IsValid)} ready, {items.Count(item => !item.IsValid)} with problems. Output: {OutputFolder}";
+            BatchStatus = Ui.F("Batch.Status.Preview", items.Count, items.Count(item => item.IsValid), items.Count(item => !item.IsValid), OutputFolder);
             return (job, items);
         }
         catch (Exception exception) when (exception is IOException or FormatException or ArgumentException)
         {
-            BatchStatus = "Could not read the batch data: " + exception.Message;
+            BatchStatus = Ui.F("Batch.Status.ReadError", exception.Message);
             return null;
         }
     }
 
-    private Task RunBatchAsync() => RunBusyAsync("Running batch", async () =>
+    private Task RunBatchAsync() => RunBusyAsync(Ui.T("Status.RunningBatch"), async () =>
     {
         if (PreviewBatch() is not { } batch)
         {
@@ -730,12 +729,12 @@ public sealed class OperatorViewModel : ObservableObject
         try
         {
             var recipe = BatchRecipe!;
-            AddLog($"Batch '{batch.Job.Name}' started: {batch.Items.Count} row(s).");
+            AddLog(Ui.F("Log.BatchStarted", batch.Job.Name, batch.Items.Count));
             var progress = new Progress<BatchProgress>(report =>
             {
                 BatchPercent = report.Percent;
-                BatchStatus = $"{report.Completed} of {report.Total} done — {report.Succeeded} ok, {report.Failed} failed" +
-                              (report.CurrentOutputName is null ? "" : $" — working on {report.CurrentOutputName}");
+                BatchStatus = Ui.F("Batch.Status.Progress", report.Completed, report.Total, report.Succeeded, report.Failed) +
+                              (report.CurrentOutputName is null ? "" : Ui.F("Batch.Status.Current", report.CurrentOutputName));
             });
 
             var result = await new BatchRunner(_services.Executor).RunAsync(batch.Job, recipe, progress, cancellationToken: cancellation.Token);
@@ -743,13 +742,13 @@ public sealed class OperatorViewModel : ObservableObject
             BatchRows.Clear();
             foreach (var item in result.Items)
             {
-                BatchRows.Add(new BatchPreviewRow(item.RowNumber, item.OutputBaseName ?? "", item.Success ? "Done" : "Failed: " + item.Error));
+                BatchRows.Add(new BatchPreviewRow(item.RowNumber, item.OutputBaseName ?? "", item.Success ? Ui.T("Batch.Row.Done") : Ui.F("Batch.Row.Failed", item.Error)));
             }
 
             BatchPercent = 100;
-            BatchStatus = $"Finished in {result.Duration.TotalSeconds:0.0} s: {result.Succeeded} ok, {result.Failed} failed" +
-                          (result.Cancelled ? " (cancelled)" : "") + $". Output: {OutputFolder}";
-            AddLog($"Batch finished: {result.Succeeded} ok, {result.Failed} failed, {result.ProducedFiles.Count()} file(s).");
+            BatchStatus = Ui.F("Batch.Status.Finished", result.Duration.TotalSeconds.ToString("0.0", Msg.Culture), result.Succeeded, result.Failed,
+                result.Cancelled ? Ui.T("Batch.Status.Cancelled") : "", OutputFolder);
+            AddLog(Ui.F("Log.BatchFinished", result.Succeeded, result.Failed, result.ProducedFiles.Count()));
         }
         finally
         {
@@ -772,16 +771,16 @@ public sealed class OperatorViewModel : ObservableObject
     private void AddAssets()
     {
         var tags = AssetTags.Split([',', ';'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-        foreach (var file in _services.Shell.BrowseForFiles("Add files to the asset library", "All files|*.*", multiple: true))
+        foreach (var file in _services.Shell.BrowseForFiles(Ui.T("Dialog.AssetsTitle"), Ui.T("Dialog.AllFilesFilter"), multiple: true))
         {
             try
             {
                 var asset = _services.Assets.Add(file, category: AssetCategory, tags: tags);
-                AddLog($"Asset added: {asset.Name} ({asset.Category}).");
+                AddLog(Ui.F("Log.AssetAdded", asset.Name, asset.Category));
             }
             catch (IOException exception)
             {
-                AddLog($"Asset not added: {exception.Message}");
+                AddLog(Ui.F("Log.AssetNotAdded", exception.Message));
             }
         }
 
@@ -791,7 +790,7 @@ public sealed class OperatorViewModel : ObservableObject
     private void RemoveSelectedAsset()
     {
         var asset = SelectedAsset!;
-        if (_services.Shell.Confirm($"Remove '{asset.Name}' from the asset library?", "Remove asset"))
+        if (_services.Shell.Confirm(Ui.F("Confirm.RemoveAsset", asset.Name), Ui.T("Confirm.RemoveAssetTitle")))
         {
             _services.Assets.Remove(asset.Id);
             RefreshAssets();
@@ -804,10 +803,10 @@ public sealed class OperatorViewModel : ObservableObject
         SetPlan(
             new AutomationPlan
             {
-                Name = $"Place {asset.Name}",
+                Name = Ui.F("Plan.PlaceAssetName", asset.Name),
                 Actions = [new ImportFileAction { Id = "asset", FilePath = asset.FilePath, Name = asset.Name }],
             },
-            $"Plan prepared to place the asset '{asset.Name}' in the active document.");
+            Ui.F("Plan.PlaceAsset", asset.Name));
         SelectedTabIndex = 0;
     }
 
@@ -820,7 +819,7 @@ public sealed class OperatorViewModel : ObservableObject
         {
             HistoryRows.Add(new HistoryRow(
                 entry,
-                entry.TimestampUtc.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture),
+                entry.TimestampUtc.ToLocalTime().ToString("dd.MM.yyyy HH:mm:ss", Msg.Culture),
                 entry.Plan.Name,
                 entry.Result.Summary));
         }
@@ -832,7 +831,7 @@ public sealed class OperatorViewModel : ObservableObject
 
         // A fresh id keeps the new run distinguishable from the original in the history.
         SetPlan(entry.Plan with { Id = Guid.NewGuid().ToString("N"), CreatedUtc = DateTimeOffset.UtcNow },
-            $"Plan reloaded from {SelectedHistory.Time}. Object ids may have changed since then — inspect the document if a step fails.");
+            Ui.F("Plan.Reloaded", SelectedHistory.Time));
         Request = entry.Plan.UserRequest ?? Request;
         SelectedTabIndex = 0;
     }
@@ -869,13 +868,14 @@ public sealed class OperatorViewModel : ObservableObject
     private async Task RunBusyAsync(string status, Func<Task> work)
     {
         IsBusy = true;
-        StatusMessage = status + "…";
+        var busyText = Ui.F("Status.Busy", status);
+        StatusMessage = busyText;
         try
         {
             await work();
-            if (StatusMessage == status + "…")
+            if (StatusMessage == busyText)
             {
-                StatusMessage = "Ready";
+                StatusMessage = Ui.T("Status.Ready");
             }
         }
         catch (Exception exception)
@@ -883,11 +883,12 @@ public sealed class OperatorViewModel : ObservableObject
             if (exception is CorelAutomationException)
             {
                 IsConnected = false;
-                ConnectionText = "Not connected";
+                ConnectionText = Ui.T("Connection.NotConnected");
             }
 
-            StatusMessage = "Something went wrong — see Activity";
-            AddLog("Error: " + exception.Message);
+            // The user sees a plain explanation; the technical exception goes to the log file only.
+            StatusMessage = Ui.T("Status.Error");
+            AddLog(Ui.F("Log.Error", FriendlyMessage(exception)));
             _services.FileLog.Write(status + " failed.", exception);
         }
         finally
@@ -923,11 +924,28 @@ public sealed class OperatorViewModel : ObservableObject
         }
     }
 
+    /// <summary>Turns an exception into a sentence a non-technical user can act on.</summary>
+    private static string FriendlyMessage(Exception exception) => exception switch
+    {
+        CorelAutomationException { Operation: "SaveCdr" } => Ui.T("Error.CdrNotSaved"),
+        CorelAutomationException { Operation: "ExportPdf" } => Ui.T("Error.PdfNotExported"),
+        CorelAutomationException { Operation: "Connect" } => Ui.T("Error.CorelNotConnected"),
+        CorelAutomationException { InnerException: InvalidOperationException } => Ui.T("Error.CorelNotConnected"),
+        CorelAutomationException => Ui.T("Error.CorelBusy"),
+        FileNotFoundException notFound => notFound.FileName is null ? notFound.Message : Ui.F("Error.FileNotFound", notFound.FileName),
+        UnauthorizedAccessException => Ui.T("Error.NoWriteAccess"),
+        IOException => Ui.F("Error.FileAccess", exception.Message),
+
+        // These are raised by the application itself with messages from the Turkish catalogue.
+        RecipeVariableException or NotSupportedException or FormatException or ArgumentException => exception.Message,
+        _ => Ui.T("Error.Unexpected"),
+    };
+
     private void AddLog(string message)
     {
-        Logs.Add($"{DateTime.Now:HH:mm:ss}  {message}");
+        Logs.Add($"{DateTime.Now.ToString("HH:mm:ss", Msg.Culture)}  {message}");
         _services.FileLog.Write(message);
     }
 
-    private static string Mm(double value) => value.ToString("0.##", CultureInfo.InvariantCulture);
+    private static string Mm(double value) => Msg.Number(value);
 }

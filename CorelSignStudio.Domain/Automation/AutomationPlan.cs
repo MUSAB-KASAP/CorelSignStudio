@@ -3,6 +3,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 using CorelSignStudio.Domain.References;
+using CorelSignStudio.Domain.Localization;
 
 namespace CorelSignStudio.Domain.Automation;
 
@@ -59,17 +60,17 @@ public sealed record AutomationPlan
         var errors = new List<PlanValidationError>();
         if (string.IsNullOrWhiteSpace(Name))
         {
-            errors.Add(new(null, "Plan name is required."));
+            errors.Add(new(null, Msg.Get("Validation.PlanNameRequired")));
         }
 
         if (Actions.Count == 0)
         {
-            errors.Add(new(null, "The plan contains no actions."));
+            errors.Add(new(null, Msg.Get("Validation.NoActions")));
         }
 
         if (Target == DocumentTarget.NewDocument && Actions.Count > 0 && !Actions[0].OpensDocument)
         {
-            errors.Add(new(Actions[0].Id, "A plan that targets a new document must start with createDocument or openDocument."));
+            errors.Add(new(Actions[0].Id, Msg.Get("Validation.NewDocumentFirst")));
         }
 
         var seen = new HashSet<string>(StringComparer.Ordinal);
@@ -78,7 +79,7 @@ public sealed record AutomationPlan
         {
             if (action is null)
             {
-                errors.Add(new(null, "The plan contains an empty action."));
+                errors.Add(new(null, Msg.Get("Validation.EmptyAction")));
                 continue;
             }
 
@@ -89,7 +90,7 @@ public sealed record AutomationPlan
 
             if (!string.IsNullOrWhiteSpace(action.Id) && !seen.Add(action.Id))
             {
-                errors.Add(new(action.Id, $"Action id '{action.Id}' is used more than once."));
+                errors.Add(new(action.Id, Msg.Format("Validation.DuplicateActionId", action.Id)));
             }
 
             foreach (var target in action.TargetRefs.Where(TargetRef.IsActionRef))
@@ -98,8 +99,8 @@ public sealed record AutomationPlan
                 if (!creators.Contains(referenced))
                 {
                     errors.Add(new(action.Id, seen.Contains(referenced) && referenced != action.Id
-                        ? $"Target '{target}' refers to an action that does not create objects."
-                        : $"Target '{target}' does not refer to an earlier action in this plan."));
+                        ? Msg.Format("Validation.ReferenceNotCreator", target)
+                        : Msg.Format("Validation.ReferenceNotEarlier", target)));
                 }
             }
 
@@ -114,7 +115,7 @@ public sealed record AutomationPlan
             // Only reached for well-formed actions, so serializing cannot fail on non-finite numbers.
             foreach (var placeholder in PlaceholderSyntax.FindAll(AutomationJson.Serialize(Actions)))
             {
-                errors.Add(new(null, $"Variable '{{{{{placeholder}}}}}' has no value."));
+                errors.Add(new(null, Msg.Format("Validation.VariableNoValue", PlaceholderSyntax.Format(placeholder))));
             }
         }
 
@@ -131,7 +132,7 @@ public sealed record PlanValidationResult(IReadOnlyList<PlanValidationError> Err
 {
     public bool IsValid => Errors.Count == 0;
 
-    public override string ToString() => IsValid ? "Valid" : string.Join(Environment.NewLine, Errors);
+    public override string ToString() => IsValid ? Msg.Get("Validation.Valid") : string.Join(Environment.NewLine, Errors);
 }
 
 public static partial class PlaceholderSyntax

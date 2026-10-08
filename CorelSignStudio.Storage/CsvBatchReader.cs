@@ -1,6 +1,7 @@
 using System.Text;
 using CorelSignStudio.Domain.Batch;
 using CorelSignStudio.Domain.Recipes;
+using CorelSignStudio.Domain.Localization;
 
 namespace CorelSignStudio.Storage;
 
@@ -32,13 +33,13 @@ public static class CsvBatchReader
         var headers = records[0].Select(RecipeBuilder.NormalizeNameOrEmpty).ToArray();
         if (headers.All(string.IsNullOrEmpty))
         {
-            throw new FormatException("The first CSV line must contain the column names.");
+            throw new FormatException(Msg.Get("Csv.HeaderRequired"));
         }
 
         var duplicate = headers.Where(header => header.Length > 0).GroupBy(header => header).FirstOrDefault(group => group.Count() > 1);
         if (duplicate is not null)
         {
-            throw new FormatException($"Column name '{duplicate.Key}' appears more than once.");
+            throw new FormatException(Msg.Format("Csv.DuplicateColumn", duplicate.Key));
         }
 
         var rows = new List<BatchRow>();

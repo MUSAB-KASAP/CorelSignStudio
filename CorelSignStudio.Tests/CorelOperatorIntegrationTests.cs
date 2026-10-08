@@ -316,7 +316,7 @@ public sealed class CorelOperatorIntegrationTests : IClassFixture<CorelOperatorF
         Assert.Equal("setText", failed.FailedActionType);
         Assert.Equal(3, failed.FailedActionIndex);
         Assert.Equal(["shift", "paint"], failed.CompletedActionIds);
-        Assert.Contains("not text", failed.ErrorMessage);
+        Assert.Contains("metin nesnesi değil", failed.ErrorMessage);
         Assert.True(failed.RolledBack, failed.RollbackNote);
         var rolledBack = (await inspector.InspectActiveDocumentAsync())!;
         Assert.Equal(titleAfter.Bounds.XMm, rolledBack.FindShape(title.Id)!.Bounds.XMm, 2);

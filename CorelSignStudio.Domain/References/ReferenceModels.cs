@@ -1,4 +1,5 @@
 using CorelSignStudio.Domain.Automation;
+using CorelSignStudio.Domain.Localization;
 
 namespace CorelSignStudio.Domain.References;
 
@@ -60,14 +61,18 @@ public sealed record ReferenceInput
     [System.Text.Json.Serialization.JsonIgnore]
     public bool IsVector => ReferenceFileTypes.IsVector(FileType);
 
+    /// <summary>Short badge text for the UI, for example <c>PDF</c>.</summary>
+    [System.Text.Json.Serialization.JsonIgnore]
+    public string FileTypeLabel => FileType.ToString().ToUpperInvariant();
+
     public static ReferenceInput FromFile(string path, ReferenceRole role = ReferenceRole.VisualReference)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
         var type = ReferenceFileTypes.Detect(path);
         if (type == ReferenceFileType.Unknown)
         {
-            throw new NotSupportedException(
-                $"'{Path.GetFileName(path)}' is not a supported reference. Supported: {string.Join(", ", ReferenceFileTypes.SupportedExtensions)}.");
+            throw new NotSupportedException(Msg.Format(
+                "Reference.Unsupported", Path.GetFileName(path), string.Join(", ", ReferenceFileTypes.SupportedExtensions)));
         }
 
         return new ReferenceInput { FilePath = Path.GetFullPath(path), FileType = type, Role = role };
@@ -165,16 +170,14 @@ public sealed class ImportReferencePlanBuilder : IReferencePlanBuilder
             {
                 Id = "import",
                 FilePath = reference.FilePath,
-                Name = analysis.CanReuseVectorContent ? "Reference (editable)" : "Reference (bitmap)",
+                Name = Msg.Get(analysis.CanReuseVectorContent ? "Reference.ShapeName.Vector" : "Reference.ShapeName.Bitmap"),
             });
         }
 
         return new AutomationPlan
         {
-            Name = $"Use reference {reference.FileName}",
-            Description = analysis.CanReuseVectorContent
-                ? "Reuses the reference's own vector objects instead of redrawing them."
-                : "Places the bitmap reference in the document as a backdrop.",
+            Name = Msg.Format("Reference.PlanName", reference.FileName),
+            Description = Msg.Get(analysis.CanReuseVectorContent ? "Reference.Plan.Vector" : "Reference.Plan.Bitmap"),
             Target = actions[0].OpensDocument ? DocumentTarget.NewDocument : DocumentTarget.ActiveDocument,
             Actions = actions,
             ReferenceFiles = [reference],
