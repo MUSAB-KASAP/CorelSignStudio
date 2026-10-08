@@ -10,11 +10,30 @@ public sealed record AiRequest
     public required string SystemPrompt { get; init; }
     public required string UserMessage { get; init; }
 
+    /// <summary>Images the model should look at (multimodal providers only). Their bytes are never logged.</summary>
+    public IReadOnlyList<AiImage> Images { get; init; } = [];
+
     /// <summary>JSON Schema the answer must follow, for providers that can enforce one. Optional.</summary>
     public string? JsonSchema { get; init; }
 
     public int MaxOutputTokens { get; init; } = 16000;
     public TimeSpan Timeout { get; init; } = TimeSpan.FromSeconds(120);
+}
+
+/// <summary>An image attached to a request. Only the metadata may appear in logs.</summary>
+public sealed record AiImage
+{
+    public required string FileName { get; init; }
+
+    /// <summary>image/png or image/jpeg.</summary>
+    public required string MimeType { get; init; }
+
+    public required byte[] Bytes { get; init; }
+    public int WidthPixels { get; init; }
+    public int HeightPixels { get; init; }
+
+    /// <summary>Safe one-line description for logs: name, type, pixel size and byte count — never the content.</summary>
+    public string Describe() => $"{FileName} ({MimeType}, {WidthPixels}x{HeightPixels} px, {Bytes.Length} bytes)";
 }
 
 public sealed record AiResponse
@@ -37,6 +56,9 @@ public interface IAiClient
     string ProviderId { get; }
 
     string Model { get; }
+
+    /// <summary>True when <see cref="AiRequest.Images"/> is honoured.</summary>
+    bool SupportsImages => false;
 
     /// <exception cref="AiClientException">Any provider, network or configuration failure.</exception>
     Task<AiResponse> CompleteAsync(AiRequest request, CancellationToken cancellationToken = default);

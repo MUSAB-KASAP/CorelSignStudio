@@ -21,6 +21,7 @@ public static class ActionDescriber
             CreateRectangleAction a => Msg.Format("Describe.CreateRectangle", Mm(a.WidthMm), Mm(a.HeightMm), Mm(a.XMm), Mm(a.YMm), Named(a.Name)),
             CreateEllipseAction a => Msg.Format("Describe.CreateEllipse", Mm(a.WidthMm), Mm(a.HeightMm), Mm(a.XMm), Mm(a.YMm), Named(a.Name)),
             CreateLineAction a => Msg.Format("Describe.CreateLine", Mm(a.X1Mm), Mm(a.Y1Mm), Mm(a.X2Mm), Mm(a.Y2Mm), Named(a.Name)),
+            CreatePolygonAction a => Msg.Format("Describe.CreatePolygon", a.PointsMm.Count, Named(a.Name)),
             CreateTableAction a => Msg.Format(
                 "Describe.CreateTable", a.Columns, a.Rows, Mm(a.WidthMm), Mm(a.HeightMm),
                 a.CellAlignment == TextAlignment.Center ? Msg.Get("Describe.CreateTable.Centered") : "", Named(a.Name)),

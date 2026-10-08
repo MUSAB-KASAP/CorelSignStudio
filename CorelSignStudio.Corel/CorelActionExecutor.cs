@@ -141,6 +141,7 @@ internal sealed class CorelAutomationSession(object applicationObject, Action<st
         CreateRectangleAction a => Created(a, CreateRectangle(a)),
         CreateEllipseAction a => Created(a, CreateEllipse(a)),
         CreateLineAction a => Created(a, CreateLine(a)),
+        CreatePolygonAction a => Created(a, CreatePolygon(a)),
         CreateTableAction a => CreateTable(a),
         ImportFileAction a => Created(a, ImportFile(a)),
         MoveAction a => Move(a),
@@ -303,6 +304,30 @@ internal sealed class CorelAutomationSession(object applicationObject, Action<st
             frame.ToCorelY(action.Y1Mm),
             frame.ToCorelX(action.X2Mm),
             frame.ToCorelY(action.Y2Mm));
+        ApplyCreateStyle(shape, action);
+        return shape;
+    }
+
+    private object CreatePolygon(CreatePolygonAction action)
+    {
+        dynamic layer = LayerFor(action.Layer);
+        PageFrame frame = Frame;
+
+        // Verified signatures (CorelDRAW 2026): Application.CreateCurve(Document), Curve.CreateSubPath(x, y),
+        // SubPath.AppendLineSegment(x, y), SubPath.Closed, Layer.CreateCurve(Curve).
+        dynamic curve = _application.CreateCurve(Document);
+        dynamic path = curve.CreateSubPath(frame.ToCorelX(action.PointsMm[0][0]), frame.ToCorelY(action.PointsMm[0][1]));
+        foreach (var point in action.PointsMm.Skip(1))
+        {
+            path.AppendLineSegment(frame.ToCorelX(point[0]), frame.ToCorelY(point[1]));
+        }
+
+        if (action.Closed)
+        {
+            path.Closed = true;
+        }
+
+        dynamic shape = layer.CreateCurve(curve);
         ApplyCreateStyle(shape, action);
         return shape;
     }

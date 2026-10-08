@@ -36,6 +36,8 @@ public sealed class AnthropicAiClient : IAiClient
 
     public string Model { get; }
 
+    public bool SupportsImages => true;
+
     public async Task<AiResponse> CompleteAsync(AiRequest request, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(request);
@@ -49,6 +51,31 @@ public sealed class AnthropicAiClient : IAiClient
             // AiPlanParser. If the provider rejects the schema itself, ask again in plain JSON mode.
             return await SendAsync(request, null, cancellationToken).ConfigureAwait(false);
         }
+    }
+
+    /// <summary>Images first, then the text — the order the API recommends for image understanding.</summary>
+    private static MessageParamContent BuildContent(AiRequest request)
+    {
+        if (request.Images.Count == 0)
+        {
+            return request.UserMessage;
+        }
+
+        var blocks = new List<ContentBlockParam>();
+        foreach (var image in request.Images)
+        {
+            blocks.Add(new ImageBlockParam
+            {
+                Source = new Base64ImageSource
+                {
+                    Data = Convert.ToBase64String(image.Bytes),
+                    MediaType = image.MimeType.Equals("image/jpeg", StringComparison.OrdinalIgnoreCase) ? MediaType.ImageJpeg : MediaType.ImagePng,
+                },
+            });
+        }
+
+        blocks.Add(new TextBlockParam { Text = request.UserMessage });
+        return blocks;
     }
 
     private async Task<AiResponse> SendAsync(AiRequest request, string? jsonSchema, CancellationToken cancellationToken)
@@ -67,7 +94,7 @@ public sealed class AnthropicAiClient : IAiClient
                 {
                     new() { Text = request.SystemPrompt, CacheControl = new CacheControlEphemeral() },
                 },
-                Messages = [new() { Role = Role.User, Content = request.UserMessage }],
+                Messages = [new() { Role = Role.User, Content = BuildContent(request) }],
                 OutputConfig = jsonSchema is null
                     ? null
                     : new OutputConfig
