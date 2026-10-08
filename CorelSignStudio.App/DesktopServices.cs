@@ -19,7 +19,7 @@ public sealed class DesktopShellService : IDesktopShellService
     {
         var dialog = new OpenFolderDialog
         {
-            Title = "Çıktı klasörünü seçin",
+            Title = Ui.T("Dialog.OutputFolderTitle"),
             InitialDirectory = Directory.Exists(initialFolder) ? initialFolder : null,
         };
         return dialog.ShowDialog() == true ? dialog.FolderName : null;
@@ -43,7 +43,7 @@ public sealed class DesktopShellService : IDesktopShellService
     {
         if (!Directory.Exists(path) && !File.Exists(path))
         {
-            throw new FileNotFoundException("Açılacak dosya veya klasör bulunamadı.", path);
+            throw new FileNotFoundException(Ui.T("Dialog.OpenNotFound"), path);
         }
 
         Process.Start(new ProcessStartInfo(path) { UseShellExecute = true });

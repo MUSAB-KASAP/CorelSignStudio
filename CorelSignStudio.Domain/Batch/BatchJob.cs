@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Globalization;
 using CorelSignStudio.Domain.Automation;
 using CorelSignStudio.Domain.Recipes;
+using CorelSignStudio.Domain.Localization;
 
 namespace CorelSignStudio.Domain.Batch;
 
@@ -118,7 +119,7 @@ public static class BatchExpander
 
                 plan = plan with
                 {
-                    Name = $"{job.Name} — row {row.RowNumber}",
+                    Name = Msg.Format("Batch.PlanName", job.Name, row.RowNumber),
                     Actions = actions,
                     Outputs = job.Formats.Distinct().Select(format => new OutputRequirement(format, basePath + ExtensionOf(format))).ToArray(),
                 };

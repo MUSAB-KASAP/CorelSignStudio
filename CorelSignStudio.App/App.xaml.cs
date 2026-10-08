@@ -1,7 +1,10 @@
 using System.IO;
 using System.Windows;
 using System.Windows.Threading;
+using System.Globalization;
+using System.Windows.Markup;
 using CorelSignStudio.Corel;
+using CorelSignStudio.Domain.Localization;
 using CorelSignStudio.Domain.Planning;
 using CorelSignStudio.Domain.References;
 using CorelSignStudio.Storage;
@@ -17,6 +20,7 @@ public partial class App : Application
     protected override void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
+        ApplyCulture(Msg.Culture);
 
         var projectRoot = ProjectPaths.FindProjectRoot();
         var dataFolder = Path.Combine(projectRoot, "data");
@@ -76,6 +80,22 @@ public partial class App : Application
         }
     }
 
+    /// <summary>
+    /// Makes the whole user interface follow one culture: resource lookups, number and date formatting,
+    /// and WPF bindings. The default is Turkish (tr-TR); an English package only has to set
+    /// <see cref="Msg.Culture"/> before this runs. Files and JSON always use the invariant culture.
+    /// </summary>
+    private static void ApplyCulture(CultureInfo culture)
+    {
+        CultureInfo.DefaultThreadCurrentCulture = culture;
+        CultureInfo.DefaultThreadCurrentUICulture = culture;
+        CultureInfo.CurrentCulture = culture;
+        CultureInfo.CurrentUICulture = culture;
+        FrameworkElement.LanguageProperty.OverrideMetadata(
+            typeof(FrameworkElement),
+            new FrameworkPropertyMetadata(XmlLanguage.GetLanguage(culture.IetfLanguageTag)));
+    }
+
     protected override void OnExit(ExitEventArgs e)
     {
         if (_corelService is not null)
@@ -91,7 +111,7 @@ public partial class App : Application
         try
         {
             // Show a prepared plan in the first screenshot; planning needs no CorelDRAW connection.
-            viewModel.Request = "Create a 500x700 mm document\nAdd text TEST in the center\nCreate a table with 8 columns and 20 rows and center all text\nDelete it\nMake the logo look premium";
+            viewModel.Request = "500x700 mm belge oluştur\nOrtaya GİRİŞ YASAKTIR yaz\n8 sütun 20 satır tablo oluştur\nOnu sil\nLogoyu daha şık yap";
             viewModel.PreparePlanCommand.Execute(null);
             string[] names = ["operator", "document", "recipes", "batch", "assets", "history", "settings"];
             for (var index = 0; index < names.Length; index++)

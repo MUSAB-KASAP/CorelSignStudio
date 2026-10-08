@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using CorelSignStudio.Domain.Localization;
 
 namespace CorelSignStudio.Domain.Automation;
 
@@ -69,10 +70,10 @@ public sealed record PlanExecutionResult
 
     public string Summary => Status switch
     {
-        PlanExecutionStatus.Succeeded => $"{CompletedActionIds.Count} action(s) completed.",
-        PlanExecutionStatus.ValidationFailed => $"Plan is invalid: {string.Join("; ", ValidationErrors)}",
-        PlanExecutionStatus.Cancelled => $"Cancelled after {CompletedActionIds.Count} action(s).",
-        _ => $"Action {FailedActionIndex} '{FailedActionId}' ({FailedActionType}) failed: {ErrorMessage}",
+        PlanExecutionStatus.Succeeded => Msg.Format("Execution.Summary.Succeeded", CompletedActionIds.Count),
+        PlanExecutionStatus.ValidationFailed => Msg.Format("Execution.Summary.ValidationFailed", string.Join("; ", ValidationErrors)),
+        PlanExecutionStatus.Cancelled => Msg.Format("Execution.Summary.Cancelled", CompletedActionIds.Count),
+        _ => Msg.Format("Execution.Summary.Failed", FailedActionIndex, FailedActionId, ErrorMessage),
     };
 }
 
@@ -129,7 +130,7 @@ public static class PlanExecutionEngine
                 PlanId = plan.Id,
                 Status = PlanExecutionStatus.ValidationFailed,
                 ValidationErrors = validation.Errors,
-                ErrorMessage = "The plan failed validation and was not executed.",
+                ErrorMessage = Msg.Get("Execution.NotExecuted"),
                 ErrorDetails = validation.ToString(),
             };
         }
@@ -156,7 +157,7 @@ public static class PlanExecutionEngine
         {
             var rollback = begun && options.RollbackOnFailure
                 ? TryRollback(session)
-                : new RollbackOutcome(false, begun ? "Rollback was not requested." : "Nothing was changed.");
+                : new RollbackOutcome(false, Msg.Get(begun ? "Execution.RollbackNotRequested" : "Execution.NothingChanged"));
             return Build(PlanExecutionStatus.Failed) with
             {
                 FailedActionId = action?.Id,
@@ -185,10 +186,10 @@ public static class PlanExecutionEngine
             {
                 var rollback = options.RollbackOnFailure
                     ? TryRollback(session)
-                    : new RollbackOutcome(false, "Rollback was not requested.");
+                    : new RollbackOutcome(false, Msg.Get("Execution.RollbackNotRequested"));
                 return Build(PlanExecutionStatus.Cancelled) with
                 {
-                    ErrorMessage = "Execution was cancelled.",
+                    ErrorMessage = Msg.Get("Execution.Cancelled"),
                     RolledBack = rollback.RolledBack,
                     RollbackNote = rollback.Note,
                 };
@@ -240,9 +241,9 @@ public static class PlanExecutionEngine
         {
             return Build(PlanExecutionStatus.Failed) with
             {
-                ErrorMessage = "All actions ran, but finishing the session failed: " + Describe(exception),
+                ErrorMessage = Msg.Format("Execution.CompleteFailed", Describe(exception)),
                 ErrorDetails = exception.ToString(),
-                RollbackNote = "Changes were kept.",
+                RollbackNote = Msg.Get("Execution.ChangesKept"),
             };
         }
 
@@ -257,7 +258,7 @@ public static class PlanExecutionEngine
         }
         catch (Exception exception)
         {
-            return new RollbackOutcome(false, "Rollback failed: " + Describe(exception));
+            return new RollbackOutcome(false, Msg.Format("Execution.RollbackFailed", Describe(exception)));
         }
     }
 

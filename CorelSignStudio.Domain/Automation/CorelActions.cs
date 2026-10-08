@@ -2,6 +2,7 @@ using System.Reflection;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 using CorelSignStudio.Domain.Inspection;
+using CorelSignStudio.Domain.Localization;
 
 namespace CorelSignStudio.Domain.Automation;
 
@@ -74,11 +75,11 @@ public abstract record CorelAction
         var errors = new List<string>();
         if (string.IsNullOrWhiteSpace(Id))
         {
-            errors.Add("Action id is required.");
+            errors.Add(Msg.Get("Validation.ActionIdRequired"));
         }
         else if (Id.Any(char.IsWhiteSpace) || Id.StartsWith('@'))
         {
-            errors.Add($"Action id '{Id}' must not contain whitespace or start with '@'.");
+            errors.Add(Msg.Format("Validation.ActionIdInvalid", Id));
         }
 
         ValidateCore(errors);
@@ -91,7 +92,7 @@ public abstract record CorelAction
     {
         if (!double.IsFinite(value) || value <= 0)
         {
-            errors.Add($"{name} must be a positive finite number.");
+            errors.Add(Msg.Format("Validation.Positive", name));
         }
     }
 
@@ -99,7 +100,7 @@ public abstract record CorelAction
     {
         if (value is { } number && !double.IsFinite(number))
         {
-            errors.Add($"{name} must be a finite number.");
+            errors.Add(Msg.Format("Validation.Finite", name));
         }
     }
 
@@ -107,7 +108,7 @@ public abstract record CorelAction
     {
         if (value is { } number && (!double.IsFinite(number) || number < 0))
         {
-            errors.Add($"{name} must be a non-negative finite number.");
+            errors.Add(Msg.Format("Validation.NonNegative", name));
         }
     }
 
@@ -115,7 +116,7 @@ public abstract record CorelAction
     {
         if (string.IsNullOrWhiteSpace(value))
         {
-            errors.Add($"{name} is required.");
+            errors.Add(Msg.Format("Validation.Required", name));
         }
     }
 
@@ -123,7 +124,7 @@ public abstract record CorelAction
     {
         if (value is not null && !ColorHex.IsValid(value))
         {
-            errors.Add($"{name} must use #RRGGBB format.");
+            errors.Add(Msg.Format("Validation.Color", name));
         }
     }
 
@@ -131,7 +132,7 @@ public abstract record CorelAction
     {
         if (string.IsNullOrWhiteSpace(path))
         {
-            errors.Add($"{name} is required.");
+            errors.Add(Msg.Format("Validation.Required", name));
             return;
         }
 
@@ -143,7 +144,7 @@ public abstract record CorelAction
         var extension = Path.GetExtension(path);
         if (!extensions.Contains(extension, StringComparer.OrdinalIgnoreCase))
         {
-            errors.Add($"{name} must end with {string.Join(" or ", extensions)}.");
+            errors.Add(Msg.Format("Validation.Extension", name, string.Join(" / ", extensions)));
         }
     }
 }
@@ -164,7 +165,7 @@ public abstract record TargetedAction : CorelAction
     {
         if (Targets is null || Targets.Count == 0)
         {
-            errors.Add("At least one target is required.");
+            errors.Add(Msg.Get("Validation.TargetRequired"));
             return;
         }
 
@@ -172,14 +173,14 @@ public abstract record TargetedAction : CorelAction
         {
             if (!TargetRef.IsValid(target))
             {
-                errors.Add($"Target '{target}' is not a valid reference. Use shape_NNN, @actionId, name:ObjectName or selection.");
+                errors.Add(Msg.Format("Validation.TargetInvalid", target));
             }
         }
 
         var multiTarget = Targets.Any(target => TargetRef.IsSelection(target) || TargetRef.IsName(target));
         if (Targets.Count < MinimumTargets && !multiTarget)
         {
-            errors.Add($"At least {MinimumTargets} targets are required.");
+            errors.Add(Msg.Format("Validation.MinimumTargets", MinimumTargets));
         }
     }
 }
@@ -305,7 +306,7 @@ public sealed record CreateTextAction : CreateShapeAction
 
         if (FrameWidthMm is null != FrameHeightMm is null)
         {
-            errors.Add("FrameWidthMm and FrameHeightMm must be set together.");
+            errors.Add(Msg.Get("Validation.FrameTogether"));
         }
         else if (FrameWidthMm is { } width && FrameHeightMm is { } height)
         {
@@ -367,7 +368,7 @@ public sealed record CreateLineAction : CreateShapeAction
         RequireFinite(errors, Y2Mm, nameof(Y2Mm));
         if (X1Mm == X2Mm && Y1Mm == Y2Mm)
         {
-            errors.Add("A line must have a non-zero length.");
+            errors.Add(Msg.Get("Validation.LineLength"));
         }
     }
 }
@@ -397,24 +398,24 @@ public sealed record CreateTableAction : CreateShapeAction
         RequirePositive(errors, HeightMm, nameof(HeightMm));
         if (Columns is < 1 or > 200)
         {
-            errors.Add("Columns must be between 1 and 200.");
+            errors.Add(Msg.Get("Validation.Columns"));
         }
 
         if (Rows is < 1 or > 500)
         {
-            errors.Add("Rows must be between 1 and 500.");
+            errors.Add(Msg.Get("Validation.Rows"));
         }
 
         if (Cells is not null)
         {
             if (Cells.Count > Rows)
             {
-                errors.Add("Cells has more rows than the table.");
+                errors.Add(Msg.Get("Validation.CellsRows"));
             }
 
             if (Cells.Any(row => row is not null && row.Count > Columns))
             {
-                errors.Add("Cells has a row with more columns than the table.");
+                errors.Add(Msg.Get("Validation.CellsColumns"));
             }
         }
 
@@ -450,12 +451,12 @@ public sealed record ImportFileAction : CorelAction
         RequireFinite(errors, YMm, nameof(YMm));
         if (XMm is null != YMm is null)
         {
-            errors.Add("XMm and YMm must be set together.");
+            errors.Add(Msg.Get("Validation.PositionTogether"));
         }
 
         if (FitWidthMm is null != FitHeightMm is null)
         {
-            errors.Add("FitWidthMm and FitHeightMm must be set together.");
+            errors.Add(Msg.Get("Validation.FitTogether"));
         }
         else if (FitWidthMm is { } width && FitHeightMm is { } height)
         {
@@ -489,11 +490,11 @@ public sealed record MoveAction : TargetedAction
         var relative = DeltaXMm != 0 || DeltaYMm != 0;
         if (absolute && relative)
         {
-            errors.Add("Use either DeltaXMm/DeltaYMm or ToXMm/ToYMm, not both.");
+            errors.Add(Msg.Get("Validation.MoveBoth"));
         }
         else if (!absolute && !relative)
         {
-            errors.Add("Move needs a non-zero offset or a destination.");
+            errors.Add(Msg.Get("Validation.MoveNone"));
         }
     }
 }
@@ -533,7 +534,7 @@ public sealed record ResizeAction : TargetedAction
         var explicitSize = WidthMm is not null || HeightMm is not null;
         if (explicitSize == ScalePercent is not null)
         {
-            errors.Add("Resize needs either WidthMm/HeightMm or ScalePercent.");
+            errors.Add(Msg.Get("Validation.ResizeChoice"));
         }
     }
 }
@@ -564,7 +565,7 @@ public sealed record SetTextAction : TargetedAction
         base.ValidateCore(errors);
         if (Text is null)
         {
-            errors.Add("Text is required.");
+            errors.Add(Msg.Get("Validation.TextRequired"));
         }
     }
 }
@@ -582,12 +583,12 @@ public sealed record SetFontAction : TargetedAction
         base.ValidateCore(errors);
         if (FontFamily is null && FontSizePt is null && Bold is null && Italic is null && Alignment is null)
         {
-            errors.Add("SetFont needs at least one font property.");
+            errors.Add(Msg.Get("Validation.FontNone"));
         }
 
         if (FontFamily is not null && string.IsNullOrWhiteSpace(FontFamily))
         {
-            errors.Add("FontFamily cannot be empty.");
+            errors.Add(Msg.Get("Validation.FontEmpty"));
         }
 
         if (FontSizePt is { } size)
@@ -624,7 +625,7 @@ public sealed record SetOutlineAction : TargetedAction
         RequireNonNegative(errors, WidthMm, nameof(WidthMm));
         if (!Remove && Color is null && WidthMm is null)
         {
-            errors.Add("SetOutline needs Color, WidthMm or Remove.");
+            errors.Add(Msg.Get("Validation.OutlineNone"));
         }
     }
 }
@@ -670,7 +671,7 @@ public sealed record AlignAction : TargetedAction
         base.ValidateCore(errors);
         if (Horizontal == HorizontalAlign.None && Vertical == VerticalAlign.None)
         {
-            errors.Add("Align needs a horizontal and/or vertical alignment.");
+            errors.Add(Msg.Get("Validation.AlignNone"));
         }
     }
 }
@@ -716,7 +717,7 @@ public sealed record DuplicateAction : TargetedAction
         RequireFinite(errors, OffsetYMm, nameof(OffsetYMm));
         if (Count is < 1 or > 1000)
         {
-            errors.Add("Count must be between 1 and 1000.");
+            errors.Add(Msg.Get("Validation.DuplicateCount"));
         }
     }
 }
@@ -812,7 +813,7 @@ public sealed record ExportPngAction : OutputAction
         base.ValidateCore(errors);
         if (Dpi is < 10 or > 2400)
         {
-            errors.Add("Dpi must be between 10 and 2400.");
+            errors.Add(Msg.Get("Validation.Dpi"));
         }
     }
 }

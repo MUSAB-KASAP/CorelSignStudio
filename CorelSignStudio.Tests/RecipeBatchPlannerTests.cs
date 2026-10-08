@@ -93,7 +93,7 @@ public sealed class RecipeTests
         var exception = Assert.Throws<RecipeVariableException>(() =>
             DoorSignRecipe().Instantiate(new Dictionary<string, string> { ["WIDTH_MM"] = "wide" }));
 
-        Assert.Contains("must be a number", exception.Errors[0]);
+        Assert.Contains("sayı olmalı", exception.Errors[0]);
     }
 
     [Fact]
@@ -135,7 +135,7 @@ public sealed class RecipeTests
         var text = VariableSubstitution.Apply("{{ name }} / {{NAME}} / {{MISSING}}", values, errors);
 
         Assert.Equal("Ali / Ali / {{MISSING}}", text);
-        Assert.Equal("Variable 'MISSING' has no value.", Assert.Single(errors));
+        Assert.Equal("'MISSING' değişkeninin değeri yok.", Assert.Single(errors));
         Assert.True(VariableSubstitution.TryParseNumber("12,5", out var number));
         Assert.Equal(12.5, number);
         Assert.True(VariableSubstitution.TryParseBoolean("Evet", out var flag) && flag);
@@ -312,7 +312,7 @@ public sealed class BatchTests
     [Fact]
     public async Task Runner_reports_progress_and_per_row_results()
     {
-        var executor = new FakeExecutor { ShouldFail = plan => plan.Name.EndsWith("row 2", StringComparison.Ordinal) };
+        var executor = new FakeExecutor { ShouldFail = plan => plan.Name.EndsWith("satır 2", StringComparison.Ordinal) };
         var progress = new List<BatchProgress>();
 
         var result = await new BatchRunner(executor).RunAsync(
@@ -515,7 +515,7 @@ public sealed class DeterministicPlannerTests
 
     [Fact]
     public void Every_documented_example_is_understood() =>
-        Assert.All(DeterministicCommandPlanner.Examples, example => Plan(example));
+        Assert.All(DeterministicCommandPlanner.Examples.Concat(DeterministicCommandPlanner.EnglishExamples), example => Plan(example));
 }
 
 public sealed class ReferenceAndAssetTests
@@ -602,7 +602,7 @@ public sealed class ReferenceAndAssetTests
 
         var reloaded = new JsonAssetLibrary(Path.Combine(folder, "library"));
         Assert.Equal(3, reloaded.GetAll().Count);
-        Assert.Equal(["Customer logos", "General", "Traffic signs"], reloaded.GetCategories());
+        Assert.Equal(["Customer logos", "Genel", "Traffic signs"], reloaded.GetCategories());
         Assert.Equal(sign.Id, Assert.Single(reloaded.Search(new AssetQuery { Text = "entry" })).Id);
         Assert.Equal(logo.Id, Assert.Single(reloaded.Search(new AssetQuery { Tags = ["LOGO"] })).Id);
         Assert.Equal(logo.Id, Assert.Single(reloaded.Search(new AssetQuery { Text = "ltd" })).Id);

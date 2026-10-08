@@ -288,7 +288,7 @@ public sealed class AutomationPlanTests
 
     [Fact]
     public void Empty_plan_is_invalid() =>
-        Assert.Contains(new AutomationPlan { Name = "Empty" }.Validate().Errors, error => error.Message.Contains("no actions"));
+        Assert.Contains(new AutomationPlan { Name = "Empty" }.Validate().Errors, error => error.Message.Contains("hiç işlem yok"));
 
     [Fact]
     public void Duplicate_action_ids_are_reported()
@@ -305,7 +305,7 @@ public sealed class AutomationPlanTests
 
         var error = Assert.Single(plan.Validate().Errors);
         Assert.Equal("a", error.ActionId);
-        Assert.Contains("more than once", error.Message);
+        Assert.Contains("birden fazla", error.Message);
     }
 
     [Fact]
@@ -348,8 +348,8 @@ public sealed class AutomationPlanTests
             ],
         };
 
-        Assert.Contains(forward.Validate().Errors, error => error.ActionId == "move" && error.Message.Contains("earlier action"));
-        Assert.Contains(nonCreator.Validate().Errors, error => error.Message.Contains("does not create objects"));
+        Assert.Contains(forward.Validate().Errors, error => error.ActionId == "move" && error.Message.Contains("daha önceki bir adımı"));
+        Assert.Contains(nonCreator.Validate().Errors, error => error.Message.Contains("nesne oluşturmayan"));
     }
 
     [Fact]
@@ -362,7 +362,7 @@ public sealed class AutomationPlanTests
             Actions = [new CreateTextAction { Id = "t", Text = "x" }],
         };
 
-        Assert.Contains(plan.Validate().Errors, error => error.Message.Contains("must start with createDocument"));
+        Assert.Contains(plan.Validate().Errors, error => error.Message.Contains("belge oluşturma veya belge açma"));
     }
 
     [Fact]
@@ -383,9 +383,9 @@ public sealed class AutomationPlanTests
         var steps = ActionDescriber.Describe(AutomationTestData.DoorSignPlan());
 
         Assert.Equal(4, steps.Count);
-        Assert.StartsWith("1. Create a new 200 x 80 mm document", steps[0]);
+        Assert.StartsWith("1. 200 x 80 mm yeni belge oluştur", steps[0]);
         Assert.Contains("Ahmet Yılmaz", steps[2]);
-        Assert.Contains("on the page", steps[3]);
+        Assert.Contains("sayfaya göre", steps[3]);
     }
 }
 
@@ -441,7 +441,7 @@ public sealed class PlanExecutionEngineTests
         Assert.True(result.RolledBack);
         Assert.Equal("undone", result.RollbackNote);
         Assert.False(session.Completed);
-        Assert.Contains("Action 3 'name' (createText) failed", result.Summary);
+        Assert.Contains("3. adım ('name') başarısız oldu", result.Summary);
     }
 
     [Fact]

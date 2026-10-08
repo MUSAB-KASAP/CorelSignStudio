@@ -1,0 +1,202 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <data name="Describe.CreateDocument" xml:space="preserve"><value>{0} x {1} mm yeni belge oluştur</value></data>
+  <data name="Describe.OpenDocument" xml:space="preserve"><value>'{0}' dosyasını aç</value></data>
+  <data name="Describe.CloseDocument" xml:space="preserve"><value>Belgeyi kaydetmeden kapat</value></data>
+  <data name="Describe.SetPageSize" xml:space="preserve"><value>Sayfa boyutunu {0} x {1} mm yap</value></data>
+  <data name="Describe.CreateText" xml:space="preserve"><value>"{0}" metnini ekle ({1}, {2} mm){3}</value></data>
+  <data name="Describe.CreateRectangle" xml:space="preserve"><value>{0} x {1} mm dikdörtgen çiz ({2}, {3} mm){4}</value></data>
+  <data name="Describe.CreateEllipse" xml:space="preserve"><value>{0} x {1} mm elips çiz ({2}, {3} mm){4}</value></data>
+  <data name="Describe.CreateLine" xml:space="preserve"><value>({0}, {1}) ile ({2}, {3}) mm arasına çizgi çiz{4}</value></data>
+  <data name="Describe.CreateTable" xml:space="preserve"><value>{0} sütun ve {1} satırlık tablo oluştur ({2} x {3} mm){4}{5}</value></data>
+  <data name="Describe.CreateTable.Centered" xml:space="preserve"><value>, metinler ortalı</value></data>
+  <data name="Describe.ImportFile" xml:space="preserve"><value>'{0}' dosyasını içe aktar{1}</value></data>
+  <data name="Describe.MoveTo" xml:space="preserve"><value>{0}: {1}, {2} mm konumuna taşı</value></data>
+  <data name="Describe.Move" xml:space="preserve"><value>{0}: {1} taşı</value></data>
+  <data name="Describe.Offset.Right" xml:space="preserve"><value>{0} mm sağa</value></data>
+  <data name="Describe.Offset.Left" xml:space="preserve"><value>{0} mm sola</value></data>
+  <data name="Describe.Offset.Down" xml:space="preserve"><value>{0} mm aşağı</value></data>
+  <data name="Describe.Offset.Up" xml:space="preserve"><value>{0} mm yukarı</value></data>
+  <data name="Describe.And" xml:space="preserve"><value> ve </value></data>
+  <data name="Describe.Scale" xml:space="preserve"><value>{0}: %{1} ölçeğine getir</value></data>
+  <data name="Describe.Resize" xml:space="preserve"><value>{0}: boyutunu {1} x {2} mm yap</value></data>
+  <data name="Describe.Auto" xml:space="preserve"><value>otomatik</value></data>
+  <data name="Describe.RotateAbsolute" xml:space="preserve"><value>{0}: açısını {1}° yap</value></data>
+  <data name="Describe.Rotate" xml:space="preserve"><value>{0}: {1}° döndür</value></data>
+  <data name="Describe.SetText" xml:space="preserve"><value>{0}: metnini "{1}" yap</value></data>
+  <data name="Describe.SetFont" xml:space="preserve"><value>{0}: yazı tipini değiştir{1}{2}</value></data>
+  <data name="Describe.SetFont.Family" xml:space="preserve"><value> ({0})</value></data>
+  <data name="Describe.SetFont.Size" xml:space="preserve"><value> {0} pt</value></data>
+  <data name="Describe.RemoveFill" xml:space="preserve"><value>{0}: dolgusunu kaldır</value></data>
+  <data name="Describe.SetFill" xml:space="preserve"><value>{0}: dolgu rengini {1} yap</value></data>
+  <data name="Describe.RemoveOutline" xml:space="preserve"><value>{0}: çizgisini kaldır</value></data>
+  <data name="Describe.SetOutline" xml:space="preserve"><value>{0}: çizgisini ayarla{1}{2}</value></data>
+  <data name="Describe.SetOutline.Color" xml:space="preserve"><value> ({0})</value></data>
+  <data name="Describe.SetOutline.Width" xml:space="preserve"><value> {0} mm</value></data>
+  <data name="Describe.Align" xml:space="preserve"><value>{0}: {1} {2} hizala</value></data>
+  <data name="Describe.Align.Left" xml:space="preserve"><value>sola</value></data>
+  <data name="Describe.Align.HCenter" xml:space="preserve"><value>yatayda ortaya</value></data>
+  <data name="Describe.Align.Right" xml:space="preserve"><value>sağa</value></data>
+  <data name="Describe.Align.Top" xml:space="preserve"><value>üste</value></data>
+  <data name="Describe.Align.VCenter" xml:space="preserve"><value>dikeyde ortaya</value></data>
+  <data name="Describe.Align.Bottom" xml:space="preserve"><value>alta</value></data>
+  <data name="Describe.Align.Page" xml:space="preserve"><value>sayfaya göre</value></data>
+  <data name="Describe.Align.FirstTarget" xml:space="preserve"><value>ilk nesneye göre</value></data>
+  <data name="Describe.Align.TargetBounds" xml:space="preserve"><value>birbirine göre</value></data>
+  <data name="Describe.Distribute.Horizontal" xml:space="preserve"><value>{0}: yatay olarak dağıt{1}</value></data>
+  <data name="Describe.Distribute.Vertical" xml:space="preserve"><value>{0}: dikey olarak dağıt{1}</value></data>
+  <data name="Describe.Distribute.Spacing" xml:space="preserve"><value> ({0} mm aralıkla)</value></data>
+  <data name="Describe.Duplicate" xml:space="preserve"><value>{0}: çoğalt{1}</value></data>
+  <data name="Describe.Duplicate.Count" xml:space="preserve"><value> ({0} kopya)</value></data>
+  <data name="Describe.Delete" xml:space="preserve"><value>{0}: sil</value></data>
+  <data name="Describe.Group" xml:space="preserve"><value>{0}: grupla{1}</value></data>
+  <data name="Describe.Ungroup" xml:space="preserve"><value>{0}: grubunu çöz</value></data>
+  <data name="Describe.MoveToLayer" xml:space="preserve"><value>{0}: '{1}' katmanına taşı</value></data>
+  <data name="Describe.CreateLayer" xml:space="preserve"><value>'{0}' adında katman oluştur</value></data>
+  <data name="Describe.Rename" xml:space="preserve"><value>{0}: adını '{1}' yap</value></data>
+  <data name="Describe.BringToFront" xml:space="preserve"><value>{0}: en öne getir</value></data>
+  <data name="Describe.SendToBack" xml:space="preserve"><value>{0}: en arkaya gönder</value></data>
+  <data name="Describe.SaveDocument" xml:space="preserve"><value>CDR olarak kaydet: {0}</value></data>
+  <data name="Describe.ExportPdf" xml:space="preserve"><value>PDF olarak dışa aktar: {0}</value></data>
+  <data name="Describe.ExportPng" xml:space="preserve"><value>PNG olarak dışa aktar ({0} dpi): {1}</value></data>
+  <data name="Describe.ExportSvg" xml:space="preserve"><value>SVG olarak dışa aktar: {0}</value></data>
+  <data name="Describe.Target.Selection" xml:space="preserve"><value>Seçili nesneler</value></data>
+  <data name="Describe.Target.ActionResult" xml:space="preserve"><value>'{0}' adımının sonucu</value></data>
+  <data name="Describe.Target.Name" xml:space="preserve"><value>'{0}'</value></data>
+  <data name="Describe.Target.Many" xml:space="preserve"><value>{0} nesne</value></data>
+  <data name="Describe.Named" xml:space="preserve"><value> ("{0}")</value></data>
+  <data name="Validation.ActionIdRequired" xml:space="preserve"><value>İşlem kimliği gerekli.</value></data>
+  <data name="Validation.ActionIdInvalid" xml:space="preserve"><value>'{0}' işlem kimliği boşluk içeremez ve '@' ile başlayamaz.</value></data>
+  <data name="Validation.Positive" xml:space="preserve"><value>{0} sıfırdan büyük bir sayı olmalı.</value></data>
+  <data name="Validation.Finite" xml:space="preserve"><value>{0} geçerli bir sayı olmalı.</value></data>
+  <data name="Validation.NonNegative" xml:space="preserve"><value>{0} negatif olmayan bir sayı olmalı.</value></data>
+  <data name="Validation.Required" xml:space="preserve"><value>{0} gerekli.</value></data>
+  <data name="Validation.Color" xml:space="preserve"><value>{0} #RRGGBB biçiminde olmalı.</value></data>
+  <data name="Validation.Extension" xml:space="preserve"><value>{0} şu uzantıyla bitmeli: {1}.</value></data>
+  <data name="Validation.TargetRequired" xml:space="preserve"><value>En az bir hedef nesne gerekli.</value></data>
+  <data name="Validation.TargetInvalid" xml:space="preserve"><value>'{0}' geçerli bir hedef değil. shape_NNN, @işlemKimliği, name:NesneAdı veya selection kullanın.</value></data>
+  <data name="Validation.MinimumTargets" xml:space="preserve"><value>En az {0} hedef nesne gerekli.</value></data>
+  <data name="Validation.FrameTogether" xml:space="preserve"><value>FrameWidthMm ve FrameHeightMm birlikte verilmeli.</value></data>
+  <data name="Validation.LineLength" xml:space="preserve"><value>Çizginin uzunluğu sıfır olamaz.</value></data>
+  <data name="Validation.Columns" xml:space="preserve"><value>Sütun sayısı 1 ile 200 arasında olmalı.</value></data>
+  <data name="Validation.Rows" xml:space="preserve"><value>Satır sayısı 1 ile 500 arasında olmalı.</value></data>
+  <data name="Validation.CellsRows" xml:space="preserve"><value>Hücre metinlerinde tablodan fazla satır var.</value></data>
+  <data name="Validation.CellsColumns" xml:space="preserve"><value>Hücre metinlerinde tablodan fazla sütunu olan bir satır var.</value></data>
+  <data name="Validation.PositionTogether" xml:space="preserve"><value>XMm ve YMm birlikte verilmeli.</value></data>
+  <data name="Validation.FitTogether" xml:space="preserve"><value>FitWidthMm ve FitHeightMm birlikte verilmeli.</value></data>
+  <data name="Validation.MoveBoth" xml:space="preserve"><value>Ya kaydırma miktarı (DeltaXMm/DeltaYMm) ya da hedef konum (ToXMm/ToYMm) verilmeli; ikisi birden olmaz.</value></data>
+  <data name="Validation.MoveNone" xml:space="preserve"><value>Taşıma için sıfırdan farklı bir kaydırma miktarı veya hedef konum gerekli.</value></data>
+  <data name="Validation.ResizeChoice" xml:space="preserve"><value>Boyutlandırma için ya genişlik/yükseklik ya da ölçek yüzdesi verilmeli.</value></data>
+  <data name="Validation.TextRequired" xml:space="preserve"><value>Metin gerekli.</value></data>
+  <data name="Validation.FontNone" xml:space="preserve"><value>Yazı tipi değişikliği için en az bir özellik verilmeli.</value></data>
+  <data name="Validation.FontEmpty" xml:space="preserve"><value>Yazı tipi adı boş olamaz.</value></data>
+  <data name="Validation.OutlineNone" xml:space="preserve"><value>Çizgi ayarı için renk, kalınlık veya kaldırma seçeneği verilmeli.</value></data>
+  <data name="Validation.AlignNone" xml:space="preserve"><value>Hizalama için yatay ve/veya dikey yön verilmeli.</value></data>
+  <data name="Validation.DuplicateCount" xml:space="preserve"><value>Kopya sayısı 1 ile 1000 arasında olmalı.</value></data>
+  <data name="Validation.Dpi" xml:space="preserve"><value>Çözünürlük (dpi) 10 ile 2400 arasında olmalı.</value></data>
+  <data name="Validation.PlanNameRequired" xml:space="preserve"><value>Plan adı gerekli.</value></data>
+  <data name="Validation.NoActions" xml:space="preserve"><value>Planda hiç işlem yok.</value></data>
+  <data name="Validation.NewDocumentFirst" xml:space="preserve"><value>Yeni belgeyle çalışan bir plan, belge oluşturma veya belge açma işlemiyle başlamalı.</value></data>
+  <data name="Validation.EmptyAction" xml:space="preserve"><value>Planda boş bir işlem var.</value></data>
+  <data name="Validation.DuplicateActionId" xml:space="preserve"><value>'{0}' işlem kimliği birden fazla kez kullanılmış.</value></data>
+  <data name="Validation.ReferenceNotCreator" xml:space="preserve"><value>'{0}' hedefi, nesne oluşturmayan bir adımı gösteriyor.</value></data>
+  <data name="Validation.ReferenceNotEarlier" xml:space="preserve"><value>'{0}' hedefi, bu plandaki daha önceki bir adımı göstermiyor.</value></data>
+  <data name="Validation.VariableNoValue" xml:space="preserve"><value>'{0}' değişkeninin değeri yok.</value></data>
+  <data name="Validation.Valid" xml:space="preserve"><value>Geçerli</value></data>
+  <data name="Execution.Summary.Succeeded" xml:space="preserve"><value>{0} işlem tamamlandı.</value></data>
+  <data name="Execution.Summary.ValidationFailed" xml:space="preserve"><value>Plan geçersiz: {0}</value></data>
+  <data name="Execution.Summary.Cancelled" xml:space="preserve"><value>{0} işlemden sonra iptal edildi.</value></data>
+  <data name="Execution.Summary.Failed" xml:space="preserve"><value>{0}. adım ('{1}') başarısız oldu: {2}</value></data>
+  <data name="Execution.NotExecuted" xml:space="preserve"><value>Plan doğrulamadan geçemediği için uygulanmadı.</value></data>
+  <data name="Execution.RollbackNotRequested" xml:space="preserve"><value>Geri alma istenmedi; yapılan değişiklikler korundu.</value></data>
+  <data name="Execution.NothingChanged" xml:space="preserve"><value>Hiçbir şey değiştirilmedi.</value></data>
+  <data name="Execution.Cancelled" xml:space="preserve"><value>İşlem iptal edildi.</value></data>
+  <data name="Execution.CompleteFailed" xml:space="preserve"><value>Tüm adımlar uygulandı, ancak işlem kapatılırken sorun oluştu: {0}</value></data>
+  <data name="Execution.ChangesKept" xml:space="preserve"><value>Değişiklikler korundu.</value></data>
+  <data name="Execution.RollbackFailed" xml:space="preserve"><value>Geri alma başarısız oldu: {0}</value></data>
+  <data name="Planner.Name" xml:space="preserve"><value>Yerleşik test planlayıcısı</value></data>
+  <data name="Planner.TypeRequest" xml:space="preserve"><value>CorelDRAW'ın ne yapmasını istediğinizi yazın.</value></data>
+  <data name="Planner.NoneUnderstood" xml:space="preserve"><value>Komutların hiçbiri yerleşik test planlayıcısı tarafından anlaşılamadı.</value></data>
+  <data name="Planner.Prepared" xml:space="preserve"><value>{0} işlem hazırlandı.</value></data>
+  <data name="Planner.PreparedPartial" xml:space="preserve"><value>{0} işlem hazırlandı; {1} komut anlaşılamadı.</value></data>
+  <data name="Planner.UnknownColor" xml:space="preserve"><value>'{0}' rengi bilinmiyor; kırmızı gibi bir renk adı veya #RRGGBB kullanın</value></data>
+  <data name="Planner.PronounWithoutObject" xml:space="preserve"><value>'onu' daha önce bu istekte oluşturulmuş bir nesneyi göstermiyor</value></data>
+  <data name="Recipe.CouldNotFill" xml:space="preserve"><value>'{0}' otomasyonu doldurulamadı: {1}</value></data>
+  <data name="Recipe.VariableNoValue" xml:space="preserve"><value>'{0}' değişkeninin değeri yok.</value></data>
+  <data name="Recipe.VariableWrongType" xml:space="preserve"><value>'{0}' değişkeni {1} olmalı, ancak '{2}' girildi.</value></data>
+  <data name="Recipe.Type.Number" xml:space="preserve"><value>sayı</value></data>
+  <data name="Recipe.Type.Boolean" xml:space="preserve"><value>evet/hayır değeri</value></data>
+  <data name="Recipe.Type.Text" xml:space="preserve"><value>metin</value></data>
+  <data name="Recipe.NotValidPlan" xml:space="preserve"><value>Doldurulan otomasyon geçerli bir plan değil: {0}</value></data>
+  <data name="Recipe.BindingNeedsLiteral" xml:space="preserve"><value>'{0}' değişkeni için plandaki değer yazılmalı.</value></data>
+  <data name="Recipe.BoundTwice" xml:space="preserve"><value>'{0}' değişkeni birden fazla kez tanımlanmış.</value></data>
+  <data name="Recipe.LiteralNotInPlan" xml:space="preserve"><value>'{1}' değişkeni için yazılan '{0}' değeri planda geçmiyor.</value></data>
+  <data name="Batch.PlanName" xml:space="preserve"><value>{0} — satır {1}</value></data>
+  <data name="Csv.HeaderRequired" xml:space="preserve"><value>CSV dosyasının ilk satırında sütun adları bulunmalı.</value></data>
+  <data name="Csv.DuplicateColumn" xml:space="preserve"><value>'{0}' sütun adı birden fazla kez geçiyor.</value></data>
+  <data name="Reference.Unsupported" xml:space="preserve"><value>'{0}' dosya türü desteklenmiyor. Desteklenen türler: {1}.</value></data>
+  <data name="Reference.NotFound" xml:space="preserve"><value>Referans dosyası bulunamadı: {0}</value></data>
+  <data name="Reference.PlanName" xml:space="preserve"><value>Referansı kullan: {0}</value></data>
+  <data name="Reference.Plan.Vector" xml:space="preserve"><value>Referansın kendi vektör nesneleri yeniden çizilmeden kullanılır.</value></data>
+  <data name="Reference.Plan.Bitmap" xml:space="preserve"><value>Görsel, belgeye arka plan olarak yerleştirilir.</value></data>
+  <data name="Reference.ShapeName.Vector" xml:space="preserve"><value>Referans (düzenlenebilir)</value></data>
+  <data name="Reference.ShapeName.Bitmap" xml:space="preserve"><value>Referans (görsel)</value></data>
+  <data name="Reference.Analyzer.Name" xml:space="preserve"><value>Dosya bilgisi</value></data>
+  <data name="Reference.Note.Vector" xml:space="preserve"><value>Vektör dosya: nesneleri yeniden çizilmeden doğrudan içe aktarılıp düzenlenebilir.</value></data>
+  <data name="Reference.Note.Bitmap" xml:space="preserve"><value>Görsel dosya: düzenlenebilir vektöre çevirmek için yapay zekâ görsel çözümleyicisi gerekir (henüz bağlı değil).</value></data>
+  <data name="Asset.FileNotFound" xml:space="preserve"><value>Varlık dosyası bulunamadı: {0}</value></data>
+  <data name="Asset.NotInLibrary" xml:space="preserve"><value>'{0}' varlığı kütüphanede yok.</value></data>
+  <data name="Asset.DefaultCategory" xml:space="preserve"><value>Genel</value></data>
+  <data name="ShapeKind.Unknown" xml:space="preserve"><value>Bilinmiyor</value></data>
+  <data name="ShapeKind.Rectangle" xml:space="preserve"><value>Dikdörtgen</value></data>
+  <data name="ShapeKind.Ellipse" xml:space="preserve"><value>Elips</value></data>
+  <data name="ShapeKind.Curve" xml:space="preserve"><value>Eğri</value></data>
+  <data name="ShapeKind.Polygon" xml:space="preserve"><value>Çokgen</value></data>
+  <data name="ShapeKind.Bitmap" xml:space="preserve"><value>Görsel</value></data>
+  <data name="ShapeKind.ArtisticText" xml:space="preserve"><value>Sanatsal metin</value></data>
+  <data name="ShapeKind.ParagraphText" xml:space="preserve"><value>Paragraf metni</value></data>
+  <data name="ShapeKind.Group" xml:space="preserve"><value>Grup</value></data>
+  <data name="ShapeKind.Table" xml:space="preserve"><value>Tablo</value></data>
+  <data name="ShapeKind.Symbol" xml:space="preserve"><value>Simge</value></data>
+  <data name="ShapeKind.Guideline" xml:space="preserve"><value>Kılavuz çizgisi</value></data>
+  <data name="ShapeKind.Other" xml:space="preserve"><value>Diğer</value></data>
+  <data name="Corel.NoDocument" xml:space="preserve"><value>CorelDRAW'da açık bir belge bulunamadı. Önce bir belge açın veya oluşturun.</value></data>
+  <data name="Corel.NoDocumentStart" xml:space="preserve"><value>CorelDRAW'da açık bir belge bulunamadı. Bir belge açın veya isteğe belge oluşturarak başlayın.</value></data>
+  <data name="Corel.DefaultGroupName" xml:space="preserve"><value>Corel AI Operatörü</value></data>
+  <data name="Corel.Rollback.NoDocument" xml:space="preserve"><value>Belgede geri alınacak değişiklik yok. Hatadan önce yazılan dosyalar korundu.</value></data>
+  <data name="Corel.Rollback.OwnDocument" xml:space="preserve"><value>Plan kendi oluşturduğu veya açtığı belgede çalışıyordu; bu belge olduğu gibi açık bırakıldı. Hatadan önce yazılan dosyalar korundu.</value></data>
+  <data name="Corel.Rollback.NoGroup" xml:space="preserve"><value>Geri alma grubu açık değildi; değişiklikler korundu.</value></data>
+  <data name="Corel.Rollback.NotGrouped" xml:space="preserve"><value>Değişiklikler geri alma için gruplanamadı; belge değiştiyse CorelDRAW'da Ctrl+Z kullanın.</value></data>
+  <data name="Corel.Rollback.Done" xml:space="preserve"><value>Bu planın açık belgede yaptığı tüm değişiklikler geri alındı. Hatadan önce yazılan dosyalar korundu.</value></data>
+  <data name="Corel.DocumentCreated" xml:space="preserve"><value>{0} x {1} mm belge oluşturuldu.</value></data>
+  <data name="Corel.DocumentOpened" xml:space="preserve"><value>{0} açıldı.</value></data>
+  <data name="Corel.DocumentClosed" xml:space="preserve"><value>Belge kapatıldı.</value></data>
+  <data name="Corel.PageSizeSet" xml:space="preserve"><value>Sayfa boyutu {0} x {1} mm oldu.</value></data>
+  <data name="Corel.FileNotFound" xml:space="preserve"><value>'{0}' dosyası bulunamadı.</value></data>
+  <data name="Corel.TableCreated" xml:space="preserve"><value>{0} x {1} tablo oluşturuldu.</value></data>
+  <data name="Corel.TableCellsSkipped" xml:space="preserve"><value> {0} hücre biçimlendirilemedi.</value></data>
+  <data name="Corel.ImportedNothing" xml:space="preserve"><value>CorelDRAW '{0}' dosyasından hiçbir şey içe aktarmadı.</value></data>
+  <data name="Corel.DistributeNeedsTwo" xml:space="preserve"><value>Dağıtmak için en az iki nesne gerekir.</value></data>
+  <data name="Corel.GroupNeedsTwo" xml:space="preserve"><value>Gruplamak için en az iki nesne gerekir.</value></data>
+  <data name="Corel.NotAGroup" xml:space="preserve"><value>{0} bir grup değil.</value></data>
+  <data name="Corel.LayerMissing" xml:space="preserve"><value>Etkin sayfada '{0}' adında bir katman yok.</value></data>
+  <data name="Corel.LayerExists" xml:space="preserve"><value>'{0}' katmanı zaten var; etkin katman yapıldı.</value></data>
+  <data name="Corel.LayerCreated" xml:space="preserve"><value>'{0}' katmanı oluşturuldu ve etkin katman yapıldı.</value></data>
+  <data name="Corel.Deleted" xml:space="preserve"><value>{0} nesne silindi.</value></data>
+  <data name="Corel.FileWritten" xml:space="preserve"><value>{0} yazıldı.</value></data>
+  <data name="Corel.FileNotCreated" xml:space="preserve"><value>CorelDRAW işlemi tamamladığını bildirdi, ancak '{0}' dosyası oluşmadı.</value></data>
+  <data name="Corel.TargetNotFound" xml:space="preserve"><value>'{0}' nesnesi belgede bulunamadı. Nesne kimliklerini yenilemek için belgeyi yeniden inceleyin.</value></data>
+  <data name="Corel.NothingSelected" xml:space="preserve"><value>CorelDRAW'da hiçbir nesne seçili değil. Önce nesneleri seçin.</value></data>
+  <data name="Corel.StepCreatedNothing" xml:space="preserve"><value>'{0}': bu adım herhangi bir nesne oluşturmadı.</value></data>
+  <data name="Corel.NoObjectNamed" xml:space="preserve"><value>Etkin sayfada '{0}' adında bir nesne yok.</value></data>
+  <data name="Corel.InvalidTarget" xml:space="preserve"><value>'{0}' geçerli bir hedef değil.</value></data>
+  <data name="Corel.NotText" xml:space="preserve"><value>{0} bir metin nesnesi değil ({1}).</value></data>
+  <data name="Corel.NotSupported" xml:space="preserve"><value>'{0}' işlem türü CorelDRAW tarafında desteklenmiyor.</value></data>
+  <data name="Corel.ComFailure" xml:space="preserve"><value>CorelDRAW bu adımı uygulayamadı. CorelDRAW'da açık bir iletişim kutusu olmadığını ve nesnenin kilitli olmadığını kontrol edin.</value></data>
+  <data name="Corel.CdrNotSaved" xml:space="preserve"><value>CDR dosyası kaydedilemedi: {0}</value></data>
+  <data name="Corel.PdfNotExported" xml:space="preserve"><value>PDF dışa aktarılamadı: {0}</value></data>
+</root>

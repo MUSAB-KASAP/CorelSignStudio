@@ -3,6 +3,7 @@ using CorelSignStudio.Domain.Assets;
 using CorelSignStudio.Domain.Automation;
 using CorelSignStudio.Domain.Batch;
 using CorelSignStudio.Domain.Recipes;
+using CorelSignStudio.Domain.Localization;
 
 namespace CorelSignStudio.Storage;
 
@@ -126,7 +127,7 @@ public sealed class JsonAssetLibrary : IAssetLibrary
         var source = Path.GetFullPath(sourceFilePath);
         if (!File.Exists(source))
         {
-            throw new FileNotFoundException("The asset file was not found.", source);
+            throw new FileNotFoundException(Msg.Format("Asset.FileNotFound", source), source);
         }
 
         lock (_gate)
@@ -147,7 +148,7 @@ public sealed class JsonAssetLibrary : IAssetLibrary
             {
                 Id = id,
                 Name = displayName,
-                Category = string.IsNullOrWhiteSpace(category) ? "General" : category.Trim(),
+                Category = string.IsNullOrWhiteSpace(category) ? Msg.Get("Asset.DefaultCategory") : category.Trim(),
                 FilePath = target,
                 FileType = extension.TrimStart('.'),
                 Tags = (tags ?? []).Select(tag => tag.Trim()).Where(tag => tag.Length > 0)
@@ -168,7 +169,7 @@ public sealed class JsonAssetLibrary : IAssetLibrary
             var index = _assets.FindIndex(existing => string.Equals(existing.Id, asset.Id, StringComparison.OrdinalIgnoreCase));
             if (index < 0)
             {
-                throw new KeyNotFoundException($"Asset '{asset.Id}' is not in the library.");
+                throw new KeyNotFoundException(Msg.Format("Asset.NotInLibrary", asset.Id));
             }
 
             _assets[index] = asset;

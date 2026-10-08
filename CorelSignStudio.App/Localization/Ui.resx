@@ -1,0 +1,206 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <data name="App.Title" xml:space="preserve"><value>Corel AI Operatörü</value></data>
+  <data name="Header.Connect" xml:space="preserve"><value>Bağlan</value></data>
+  <data name="Status.Engine" xml:space="preserve"><value>CorelDRAW 2026 COM • ayrılmış STA iş parçacığı</value></data>
+  <data name="Tab.Operator" xml:space="preserve"><value>Operatör</value></data>
+  <data name="Tab.Document" xml:space="preserve"><value>Açık Belge</value></data>
+  <data name="Tab.Recipes" xml:space="preserve"><value>Otomasyonlar</value></data>
+  <data name="Tab.Batch" xml:space="preserve"><value>Toplu İşler</value></data>
+  <data name="Tab.Assets" xml:space="preserve"><value>Varlıklar</value></data>
+  <data name="Tab.History" xml:space="preserve"><value>Geçmiş</value></data>
+  <data name="Tab.Settings" xml:space="preserve"><value>Ayarlar</value></data>
+  <data name="Operator.ReferenceFiles" xml:space="preserve"><value>Referans Dosyaları</value></data>
+  <data name="Operator.DropHint" xml:space="preserve"><value>JPG / PNG / PDF / SVG / CDR dosyalarını buraya sürükleyin</value></data>
+  <data name="Common.AddFiles" xml:space="preserve"><value>Dosya Ekle…</value></data>
+  <data name="Common.Remove" xml:space="preserve"><value>Kaldır</value></data>
+  <data name="Operator.RequestTitle" xml:space="preserve"><value>CorelDRAW ne yapsın?</value></data>
+  <data name="Operator.ExamplesHeader" xml:space="preserve"><value>Test planlayıcısının anlayabildiği komutlar</value></data>
+  <data name="Operator.ExamplesHint" xml:space="preserve"><value>Her satıra bir komut yazın. Nesne kimliklerini Açık Belge sekmesinden alın (örneğin shape_012). CorelDRAW'da seçtikleriniz için “seçili nesneleri”, bir nesnenin adı için çift tırnak kullanın (örneğin "Logo").</value></data>
+  <data name="Common.InspectDocument" xml:space="preserve"><value>Belgeyi İncele</value></data>
+  <data name="Operator.PreparePlan" xml:space="preserve"><value>Planı Hazırla</value></data>
+  <data name="Operator.ProposedOperations" xml:space="preserve"><value>Yapılacak İşlemler</value></data>
+  <data name="Common.Clear" xml:space="preserve"><value>Temizle</value></data>
+  <data name="Operator.Execute" xml:space="preserve"><value>CORELDRAW'DA UYGULA</value></data>
+  <data name="Operator.SaveAsRecipe" xml:space="preserve"><value>Otomasyon Olarak Kaydet</value></data>
+  <data name="Operator.RecipeName" xml:space="preserve"><value>OTOMASYON ADI</value></data>
+  <data name="Operator.RecipeVariables" xml:space="preserve"><value>DEĞİŞKENLER (AD = bu işte kullanılan değer)</value></data>
+  <data name="Operator.RecipeVariablesTip" xml:space="preserve"><value>Örnek:
+KISI_ADI = Ahmet Yılmaz
+GENISLIK_MM = 500</value></data>
+  <data name="Operator.Activity" xml:space="preserve"><value>İşlem Geçmişi</value></data>
+  <data name="Document.Hint" xml:space="preserve"><value>Her nesnenin değişmeyen bir kimliği vardır. Konumlar, sayfanın sol üst köşesinden milimetre cinsindendir. Kimliği komutlarda kullanın, örneğin “shape_012'yi 10 mm sağa taşı”.</value></data>
+  <data name="Document.UseId" xml:space="preserve"><value>Kimliği Komuta Ekle</value></data>
+  <data name="Document.Column.Id" xml:space="preserve"><value>Nesne Kimliği</value></data>
+  <data name="Common.Type" xml:space="preserve"><value>Tür</value></data>
+  <data name="Common.Name" xml:space="preserve"><value>Ad</value></data>
+  <data name="Document.Column.Text" xml:space="preserve"><value>Metin</value></data>
+  <data name="Document.Column.Width" xml:space="preserve"><value>Genişlik</value></data>
+  <data name="Document.Column.Height" xml:space="preserve"><value>Yükseklik</value></data>
+  <data name="Document.Column.Layer" xml:space="preserve"><value>Katman</value></data>
+  <data name="Document.Column.Group" xml:space="preserve"><value>Grup</value></data>
+  <data name="Recipes.Saved" xml:space="preserve"><value>Kayıtlı Otomasyonlar</value></data>
+  <data name="Recipes.Hint" xml:space="preserve"><value>Otomasyon, bir kez başarıyla yapılmış bir işin yeni değerlerle tekrar edilebilmesi için kaydedilmiş hâlidir.</value></data>
+  <data name="Recipes.Values" xml:space="preserve"><value>Otomasyon Değişkenleri</value></data>
+  <data name="Recipes.Column.Variable" xml:space="preserve"><value>Değişken</value></data>
+  <data name="Recipes.Column.Value" xml:space="preserve"><value>Değer</value></data>
+  <data name="Recipes.Column.Note" xml:space="preserve"><value>Açıklama</value></data>
+  <data name="Recipes.Use" xml:space="preserve"><value>Otomasyonu Kullan</value></data>
+  <data name="Recipes.Delete" xml:space="preserve"><value>Otomasyonu Sil</value></data>
+  <data name="Batch.Title" xml:space="preserve"><value>Tek otomasyon, çok satır</value></data>
+  <data name="Batch.Hint" xml:space="preserve"><value>CSV dosyasındaki her satır için ayrı bir CorelDRAW çıktısı üretilir. Var olan dosyaların üzerine yazılmaz.</value></data>
+  <data name="Batch.Recipe" xml:space="preserve"><value>OTOMASYON</value></data>
+  <data name="Batch.Data" xml:space="preserve"><value>CSV DOSYASI</value></data>
+  <data name="Common.Browse" xml:space="preserve"><value>Gözat…</value></data>
+  <data name="Batch.NamePattern" xml:space="preserve"><value>ÇIKTI ADI ŞABLONU (isteğe bağlı)</value></data>
+  <data name="Batch.NamePatternTip" xml:space="preserve"><value>Örnek: {{KISI_ADI}}_{{ROW}}</value></data>
+  <data name="Batch.NamePatternHint" xml:space="preserve"><value>Örnek: {{KISI_ADI}}_{{ROW}}. Boş bırakılırsa otomasyon adı ve satır numarası kullanılır.</value></data>
+  <data name="Batch.OutputFolder" xml:space="preserve"><value>ÇIKTI KLASÖRÜ</value></data>
+  <data name="Batch.Outputs" xml:space="preserve"><value>ÇIKTI TÜRLERİ</value></data>
+  <data name="Batch.Preview" xml:space="preserve"><value>Önizle</value></data>
+  <data name="Batch.Run" xml:space="preserve"><value>TOPLU İŞLEMİ BAŞLAT</value></data>
+  <data name="Common.Cancel" xml:space="preserve"><value>İptal</value></data>
+  <data name="Batch.Column.Row" xml:space="preserve"><value>Satır</value></data>
+  <data name="Batch.Column.OutputName" xml:space="preserve"><value>Çıktı Adı</value></data>
+  <data name="Batch.Column.Status" xml:space="preserve"><value>Durum</value></data>
+  <data name="Assets.Title" xml:space="preserve"><value>Varlık Kütüphanesi</value></data>
+  <data name="Assets.Hint" xml:space="preserve"><value>Logolar, simgeler, trafik işaretleri, semboller, müşteri dosyaları ve yeniden kullanılabilir CorelDRAW dosyaları.</value></data>
+  <data name="Assets.Search" xml:space="preserve"><value>ARA</value></data>
+  <data name="Assets.Column.Category" xml:space="preserve"><value>Kategori</value></data>
+  <data name="Assets.Column.Tags" xml:space="preserve"><value>Etiketler</value></data>
+  <data name="Assets.Column.Id" xml:space="preserve"><value>Kimlik</value></data>
+  <data name="Assets.NewCategory" xml:space="preserve"><value>YENİ DOSYALARIN KATEGORİSİ</value></data>
+  <data name="Assets.NewTags" xml:space="preserve"><value>ETİKETLER (virgülle ayırın)</value></data>
+  <data name="Assets.Place" xml:space="preserve"><value>CorelDRAW'a Yerleştir</value></data>
+  <data name="History.Title" xml:space="preserve"><value>İşlem Geçmişi</value></data>
+  <data name="History.Hint" xml:space="preserve"><value>Uygulanan her plan sonucuyla birlikte saklanır; böylece bir iş incelenebilir, tekrarlanabilir veya otomasyon olarak kaydedilebilir.</value></data>
+  <data name="History.Reload" xml:space="preserve"><value>Planı Yeniden Yükle</value></data>
+  <data name="Common.Refresh" xml:space="preserve"><value>Yenile</value></data>
+  <data name="History.Column.Time" xml:space="preserve"><value>Tarih</value></data>
+  <data name="History.Column.Job" xml:space="preserve"><value>İş</value></data>
+  <data name="History.Column.Result" xml:space="preserve"><value>Sonuç</value></data>
+  <data name="Settings.Output" xml:space="preserve"><value>Çıktı</value></data>
+  <data name="Settings.OutputFolder" xml:space="preserve"><value>VARSAYILAN ÇIKTI KLASÖRÜ</value></data>
+  <data name="Common.Open" xml:space="preserve"><value>Aç</value></data>
+  <data name="Settings.Safety" xml:space="preserve"><value>Güvenlik</value></data>
+  <data name="Settings.Rollback" xml:space="preserve"><value>Hata durumunda işlemleri geri al (planın açık belgemde yaptığı tüm değişiklikler)</value></data>
+  <data name="Settings.RollbackHint" xml:space="preserve"><value>Başarılı bir plan CorelDRAW'da her zaman tek bir Ctrl+Z adımıdır. Nesne silen veya belge kapatan planlar önce onay ister. Başarısız bir planın daha önce yazdığı dosyalar korunur.</value></data>
+  <data name="Settings.Planner" xml:space="preserve"><value>Planlayıcı</value></data>
+  <data name="Settings.PlannerHint" xml:space="preserve"><value>Yerleşik planlayıcı yalnızca sınırlı sayıda test komutunu tanır. Yapay zekâ planlayıcısı, uygulamanın geri kalanı değişmeden buraya bağlanacak.</value></data>
+  <data name="Settings.Data" xml:space="preserve"><value>Veriler</value></data>
+  <data name="Settings.DataHint" xml:space="preserve"><value>Otomasyonlar, varlıklar ve geçmiş, okunabilir JSON dosyaları olarak şu klasörde saklanır:</value></data>
+  <data name="Settings.Legacy" xml:space="preserve"><value>Eski Araç</value></data>
+  <data name="Settings.OpenLegacy" xml:space="preserve"><value>Eski Aracı Aç (tabela şablonu)</value></data>
+  <data name="Settings.LegacyHint" xml:space="preserve"><value>İlk sürümdeki parametrik tabela üretme aracı; olduğu gibi kullanılabilir durumda.</value></data>
+  <data name="Recipes.NoneSelected" xml:space="preserve"><value>Kayıtlı otomasyon yok</value></data>
+  <data name="Settings.LogFile" xml:space="preserve"><value>Günlük Dosyası: {0}</value></data>
+  <data name="Connection.NotConnected" xml:space="preserve"><value>Bağlı değil</value></data>
+  <data name="Connection.Connected" xml:space="preserve"><value>Bağlı — CorelDRAW {0}</value></data>
+  <data name="Document.NotInspected" xml:space="preserve"><value>Belge henüz incelenmedi. “Belgeyi İncele” düğmesine basın.</value></data>
+  <data name="Document.NoneOpen" xml:space="preserve"><value>CorelDRAW'da açık bir belge yok.</value></data>
+  <data name="Document.Summary" xml:space="preserve"><value>Açık belge: {0}   |   {1} x {2} mm   |   {3} nesne</value></data>
+  <data name="Document.SummarySelected" xml:space="preserve"><value>   |   {0} seçili</value></data>
+  <data name="Status.Ready" xml:space="preserve"><value>Hazır</value></data>
+  <data name="Status.Busy" xml:space="preserve"><value>{0}…</value></data>
+  <data name="Status.Connecting" xml:space="preserve"><value>CorelDRAW'a bağlanılıyor</value></data>
+  <data name="Status.Inspecting" xml:space="preserve"><value>Açık belge inceleniyor</value></data>
+  <data name="Status.Planning" xml:space="preserve"><value>Plan hazırlanıyor</value></data>
+  <data name="Status.Executing" xml:space="preserve"><value>CorelDRAW'da uygulanıyor</value></data>
+  <data name="Status.RunningBatch" xml:space="preserve"><value>Toplu işlem yürütülüyor</value></data>
+  <data name="Status.NoPlan" xml:space="preserve"><value>Plan yok</value></data>
+  <data name="Status.PlanReady" xml:space="preserve"><value>Plan hazır: {0} işlem</value></data>
+  <data name="Status.Completed" xml:space="preserve"><value>Tamamlandı</value></data>
+  <data name="Status.Failed" xml:space="preserve"><value>Başarısız — İşlem Geçmişi bölümüne bakın</value></data>
+  <data name="Status.Error" xml:space="preserve"><value>Bir sorun oluştu — İşlem Geçmişi bölümüne bakın</value></data>
+  <data name="Status.RecipeNeedsValues" xml:space="preserve"><value>Otomasyon için eksik değer var — İşlem Geçmişi bölümüne bakın</value></data>
+  <data name="Plan.None" xml:space="preserve"><value>Henüz plan yok. Ne yapılacağını yazıp “Planı Hazırla” düğmesine basın.</value></data>
+  <data name="Plan.Cleared" xml:space="preserve"><value>Plan temizlendi.</value></data>
+  <data name="Plan.TypeOrAttach" xml:space="preserve"><value>CorelDRAW'ın ne yapmasını istediğinizi yazın veya bir referans dosyası ekleyin.</value></data>
+  <data name="Plan.ImportReferencesName" xml:space="preserve"><value>Referans dosyalarını içe aktar</value></data>
+  <data name="Plan.ImportReferences" xml:space="preserve"><value>Komut yazılmadığı için plan, eklenen referans dosyalarını içe aktarır.</value></data>
+  <data name="Plan.NotUnderstood" xml:space="preserve"><value> Anlaşılamayan komutlar: {0}. (Yerleşik planlayıcı yalnızca birkaç test komutunu tanır; yerini yapay zekâ planlayıcısı alacak.)</value></data>
+  <data name="Plan.Problems" xml:space="preserve"><value> Sorunlar: {0}</value></data>
+  <data name="Plan.NeedsConfirmation" xml:space="preserve"><value>   ⚠ onay ister</value></data>
+  <data name="Plan.FromRecipe" xml:space="preserve"><value>Plan '{0}' otomasyonundan hazırlandı. İnceleyip uygulayabilirsiniz.</value></data>
+  <data name="Plan.PlaceAssetName" xml:space="preserve"><value>{0} varlığını yerleştir</value></data>
+  <data name="Plan.PlaceAsset" xml:space="preserve"><value>'{0}' varlığını açık belgeye yerleştirmek için plan hazırlandı.</value></data>
+  <data name="Plan.Reloaded" xml:space="preserve"><value>{0} tarihli plan yeniden yüklendi. Nesne kimlikleri o zamandan beri değişmiş olabilir; bir adım başarısız olursa belgeyi yeniden inceleyin.</value></data>
+  <data name="Confirm.DestructiveTitle" xml:space="preserve"><value>İşlemi Onayla</value></data>
+  <data name="Confirm.Destructive" xml:space="preserve"><value>Bu plan bazı nesneleri silecek veya bir belgeyi kaydetmeden kapatacak:
+
+{0}
+
+Devam etmek istiyor musunuz?</value></data>
+  <data name="Confirm.ReplaceRecipeTitle" xml:space="preserve"><value>Otomasyonu Değiştir</value></data>
+  <data name="Confirm.ReplaceRecipe" xml:space="preserve"><value>'{0}' adında bir otomasyon zaten var. Üzerine yazılsın mı?</value></data>
+  <data name="Confirm.DeleteRecipeTitle" xml:space="preserve"><value>Otomasyonu Sil</value></data>
+  <data name="Confirm.DeleteRecipe" xml:space="preserve"><value>'{0}' otomasyonu silinsin mi?</value></data>
+  <data name="Confirm.RemoveAssetTitle" xml:space="preserve"><value>Varlığı Kaldır</value></data>
+  <data name="Confirm.RemoveAsset" xml:space="preserve"><value>'{0}' varlık kütüphanesinden kaldırılsın mı?</value></data>
+  <data name="Log.Ready" xml:space="preserve"><value>Corel AI Operatörü hazır. Tasarım alanınız CorelDRAW olmaya devam eder; bu pencere ona talimat gönderir.</value></data>
+  <data name="Log.ReferenceAdded" xml:space="preserve"><value>Referans eklendi: {0} ({1}, {2}).</value></data>
+  <data name="Log.ReferenceVector" xml:space="preserve"><value>vektör — doğrudan kullanılabilir</value></data>
+  <data name="Log.ReferenceBitmap" xml:space="preserve"><value>görsel</value></data>
+  <data name="Log.NoDocument" xml:space="preserve"><value>CorelDRAW'da açık bir belge yok.</value></data>
+  <data name="Log.Inspected" xml:space="preserve"><value>'{0}' incelendi: {1} nesne.</value></data>
+  <data name="Log.ReferenceNote" xml:space="preserve"><value>{0}: {1}</value></data>
+  <data name="Log.ExecutionCancelled" xml:space="preserve"><value>İşlem kullanıcı tarafından iptal edildi.</value></data>
+  <data name="Log.Executing" xml:space="preserve"><value>'{0}' uygulanıyor ({1} işlem)…</value></data>
+  <data name="Log.Step" xml:space="preserve"><value>  {0} {1}/{2} {3}</value></data>
+  <data name="Log.StepError" xml:space="preserve"><value> — {0}</value></data>
+  <data name="Log.Done" xml:space="preserve"><value>{0} saniyede tamamlandı. {1}</value></data>
+  <data name="Log.File" xml:space="preserve"><value>  Dosya: {0}</value></data>
+  <data name="Log.Failed" xml:space="preserve"><value>Başarısız: {0}</value></data>
+  <data name="Log.Detail" xml:space="preserve"><value>  {0}</value></data>
+  <data name="Log.RecipeSaved" xml:space="preserve"><value>'{0}' otomasyonu kaydedildi ({1} değişken{2}).</value></data>
+  <data name="Log.RecipeNotSaved" xml:space="preserve"><value>Otomasyon kaydedilemedi: {0}</value></data>
+  <data name="Log.RecipeDeleted" xml:space="preserve"><value>'{0}' otomasyonu silindi.</value></data>
+  <data name="Log.BatchStarted" xml:space="preserve"><value>'{0}' toplu işlemi başladı: {1} satır.</value></data>
+  <data name="Log.BatchFinished" xml:space="preserve"><value>Toplu işlem bitti: {0} başarılı, {1} başarısız, {2} dosya.</value></data>
+  <data name="Log.AssetAdded" xml:space="preserve"><value>Varlık eklendi: {0} ({1}).</value></data>
+  <data name="Log.AssetNotAdded" xml:space="preserve"><value>Varlık eklenemedi: {0}</value></data>
+  <data name="Log.Error" xml:space="preserve"><value>Hata: {0}</value></data>
+  <data name="Recipe.VariableLineInvalid" xml:space="preserve"><value>'{0}' satırı AD = değer biçiminde olmalı.</value></data>
+  <data name="Recipe.Required" xml:space="preserve"><value>Zorunlu</value></data>
+  <data name="Recipe.Type.Text" xml:space="preserve"><value>Metin</value></data>
+  <data name="Recipe.Type.Number" xml:space="preserve"><value>Sayı</value></data>
+  <data name="Recipe.Type.Boolean" xml:space="preserve"><value>Evet/Hayır</value></data>
+  <data name="Batch.JobName" xml:space="preserve"><value>{0} toplu işlemi</value></data>
+  <data name="Batch.Hint.NoRecipe" xml:space="preserve"><value>CSV dosyasının ilk satırında otomasyonun değişken adları bulunmalıdır.</value></data>
+  <data name="Batch.Hint.NoVariables" xml:space="preserve"><value>Bu otomasyonun değişkeni yok; her satır aynı sonucu üretir.</value></data>
+  <data name="Batch.Hint.Columns" xml:space="preserve"><value>CSV dosyasında beklenen sütunlar: {0}</value></data>
+  <data name="Batch.Status.Initial" xml:space="preserve"><value>Bir otomasyon ve bir CSV dosyası seçin. Henüz veri yüklenmedi.</value></data>
+  <data name="Batch.Status.ChooseRecipe" xml:space="preserve"><value>Önce bir otomasyon seçin.</value></data>
+  <data name="Batch.Status.ChooseCsv" xml:space="preserve"><value>Bir CSV dosyası seçin.</value></data>
+  <data name="Batch.Status.ChooseFormat" xml:space="preserve"><value>En az bir çıktı türü seçin.</value></data>
+  <data name="Batch.Status.Preview" xml:space="preserve"><value>{0} satır: {1} hazır, {2} sorunlu. Çıktı klasörü: {3}</value></data>
+  <data name="Batch.Status.ReadError" xml:space="preserve"><value>Toplu iş verisi okunamadı: {0}</value></data>
+  <data name="Batch.Status.Progress" xml:space="preserve"><value>{0} / {1} tamamlandı — {2} başarılı, {3} başarısız</value></data>
+  <data name="Batch.Status.Current" xml:space="preserve"><value> — işleniyor: {0}</value></data>
+  <data name="Batch.Status.Finished" xml:space="preserve"><value>{0} saniyede bitti: {1} başarılı, {2} başarısız{3}. Çıktı klasörü: {4}</value></data>
+  <data name="Batch.Status.Cancelled" xml:space="preserve"><value> (iptal edildi)</value></data>
+  <data name="Batch.Row.Ready" xml:space="preserve"><value>Bekliyor</value></data>
+  <data name="Batch.Row.Problem" xml:space="preserve"><value>Sorun: {0}</value></data>
+  <data name="Batch.Row.Done" xml:space="preserve"><value>Tamamlandı</value></data>
+  <data name="Batch.Row.Failed" xml:space="preserve"><value>Başarısız: {0}</value></data>
+  <data name="Dialog.ReferencesTitle" xml:space="preserve"><value>Referans dosyalarını seçin</value></data>
+  <data name="Dialog.ReferencesFilter" xml:space="preserve"><value>Tasarım ve görsel dosyaları|*.cdr;*.pdf;*.svg;*.jpg;*.jpeg;*.png|Tüm dosyalar|*.*</value></data>
+  <data name="Dialog.CsvTitle" xml:space="preserve"><value>CSV dosyasını seçin</value></data>
+  <data name="Dialog.CsvFilter" xml:space="preserve"><value>CSV dosyaları|*.csv;*.txt|Tüm dosyalar|*.*</value></data>
+  <data name="Dialog.AssetsTitle" xml:space="preserve"><value>Varlık kütüphanesine eklenecek dosyaları seçin</value></data>
+  <data name="Dialog.AllFilesFilter" xml:space="preserve"><value>Tüm dosyalar|*.*</value></data>
+  <data name="Dialog.OutputFolderTitle" xml:space="preserve"><value>Çıktı klasörünü seçin</value></data>
+  <data name="Dialog.OpenNotFound" xml:space="preserve"><value>Açılacak dosya veya klasör bulunamadı.</value></data>
+  <data name="Error.CorelNotConnected" xml:space="preserve"><value>CorelDRAW bağlantısı kurulamadı. CorelDRAW 2026'nın kurulu ve açılabilir olduğundan emin olun.</value></data>
+  <data name="Error.CorelBusy" xml:space="preserve"><value>CorelDRAW isteğe yanıt vermedi. CorelDRAW'da açık bir iletişim kutusu varsa kapatıp yeniden deneyin.</value></data>
+  <data name="Error.CdrNotSaved" xml:space="preserve"><value>CDR dosyası kaydedilemedi.</value></data>
+  <data name="Error.PdfNotExported" xml:space="preserve"><value>PDF dışa aktarılamadı.</value></data>
+  <data name="Error.FileNotFound" xml:space="preserve"><value>Dosya bulunamadı: {0}</value></data>
+  <data name="Error.NoWriteAccess" xml:space="preserve"><value>Bu klasöre yazma izni yok. Başka bir klasör seçin.</value></data>
+  <data name="Error.FileAccess" xml:space="preserve"><value>Dosya okunamadı veya yazılamadı: {0}</value></data>
+  <data name="Error.Unexpected" xml:space="preserve"><value>Beklenmeyen bir sorun oluştu. Teknik ayrıntılar günlük dosyasına yazıldı.</value></data>
+</root>
