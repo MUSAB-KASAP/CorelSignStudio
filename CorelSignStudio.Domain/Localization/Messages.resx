@@ -228,4 +228,67 @@
   <data name="Ai.Warning.LowConfidence" xml:space="preserve"><value>Yapay zekâ bu plandan çok emin değil; uygulamadan önce adımları dikkatle inceleyin.</value></data>
   <data name="Ai.Warning.FallbackUsed" xml:space="preserve"><value>Yapay zekâ kullanılamadığı için yerleşik test planlayıcısı kullanıldı. ({0})</value></data>
   <data name="Ai.Warning.NotUnderstood" xml:space="preserve"><value>Anlaşılamayan komutlar: {0}</value></data>
+  <data name="Describe.CreatePolygon" xml:space="preserve"><value>{0} köşeli çokgen çiz{1}</value></data>
+  <data name="Validation.PolygonPoints" xml:space="preserve"><value>Çokgen için en az üç (açık çizgi için iki) nokta gerekli.</value></data>
+  <data name="Validation.PolygonPointShape" xml:space="preserve"><value>Çokgenin her noktası [x, y] biçiminde iki geçerli sayı olmalı.</value></data>
+  <data name="Vision.Analyzer.Name" xml:space="preserve"><value>Yapay zekâ görsel çözümleyicisi</value></data>
+  <data name="Vision.NotSupported" xml:space="preserve"><value>Seçili yapay zekâ sağlayıcısı görsel analizini desteklemiyor.</value></data>
+  <data name="Vision.PreviewFailed" xml:space="preserve"><value>Referans dosyası açılamadı veya önizlemesi oluşturulamadı: {0}</value></data>
+  <data name="Vision.PageQuestion" xml:space="preserve"><value>Bu PDF {0} sayfa içeriyor. Hangi sayfayı yeniden oluşturayım? Örneğin: 2. sayfa</value></data>
+  <data name="Vision.PageOutOfRange" xml:space="preserve"><value>Bu dosyada {0}. sayfa yok; dosya {1} sayfa içeriyor.</value></data>
+  <data name="Vision.Invalid.Malformed" xml:space="preserve"><value>Yapay zekânın görsel analizi geçerli biçimde değildi. Lütfen yeniden deneyin.</value></data>
+  <data name="Vision.Invalid.Geometry" xml:space="preserve"><value>Yapay zekânın analizinde geçersiz bir konum veya ölçü var ({0}). Analiz kullanılmayacak; lütfen yeniden deneyin.</value></data>
+  <data name="Vision.Invalid.Kind" xml:space="preserve"><value>Analizde tanınmayan bir öğe türü var ({0}). Analiz kullanılmayacak.</value></data>
+  <data name="Vision.Invalid.Color" xml:space="preserve"><value>Analizde geçersiz bir renk değeri var ({0}). Analiz kullanılmayacak.</value></data>
+  <data name="Vision.Invalid.NoElements" xml:space="preserve"><value>Yapay zekâ bu görselde yeniden oluşturulabilecek bir öğe bulamadı.</value></data>
+  <data name="Vision.Invalid.CannotAnalyze" xml:space="preserve"><value>Bu görsel analiz edilemedi: {0}</value></data>
+  <data name="Vision.Warning.TextUncertain" xml:space="preserve"><value>{0} öğesindeki metin net okunamadı (“{1}”); uygulamadan önce kontrol edin.</value></data>
+  <data name="Vision.Ready" xml:space="preserve"><value>Referans analiz edildi: {0} öğe bulundu.</value></data>
+  <data name="Vision.VectorReuse" xml:space="preserve"><value>Bu dosya vektör içerik barındırıyor: yeniden çizilmeyecek, kendi nesneleri içe aktarılıp düzenlenebilir olarak kullanılacak.</value></data>
+  <data name="Vision.Note.VectorNoAi" xml:space="preserve"><value>Vektör dosyalar yapay zekâya gönderilmez.</value></data>
+  <data name="Vision.MultiPageRedraw" xml:space="preserve"><value>Çok sayfalı PDF'de seçilen sayfa görsel olarak analiz edilip yeniden oluşturulur; özgün vektörleri kullanılmaz.</value></data>
+  <data name="Reconstruct.SizeQuestion" xml:space="preserve"><value>Bu tasarımın gerçek ölçüsü nedir? Örneğin 500 × 700 mm.</value></data>
+  <data name="Reconstruct.PlanName" xml:space="preserve"><value>{0} referansını yeniden oluştur</value></data>
+  <data name="Reconstruct.PlanDescription" xml:space="preserve"><value>{0} boyutunda, {1} öğeyle düzenlenebilir olarak yeniden oluşturulur.</value></data>
+  <data name="Reconstruct.Ready" xml:space="preserve"><value>{0} işlem hazırlandı: referans {1} boyutunda yeniden oluşturulacak.</value></data>
+  <data name="Reconstruct.Invalid" xml:space="preserve"><value>Analizden geçerli bir plan üretilemedi: {0}</value></data>
+  <data name="Reconstruct.NoElements" xml:space="preserve"><value>Analizde yeniden oluşturulacak öğe yok.</value></data>
+  <data name="Reconstruct.Background" xml:space="preserve"><value>Arka plan</value></data>
+  <data name="Reconstruct.Placeholder" xml:space="preserve"><value>YER TUTUCU: {0}</value></data>
+  <data name="Reconstruct.Warning.AspectMismatch" xml:space="preserve"><value>İstenen ölçünün en-boy oranı ({0}) referansınkinden ({1}) farklı; yerleşim yeni orana göre esnetildi.</value></data>
+  <data name="Reconstruct.Warning.FontLikely" xml:space="preserve"><value>{0}: yazı tipi yaklaşık eşleştirildi ({1}).</value></data>
+  <data name="Reconstruct.Warning.FontFallback" xml:space="preserve"><value>{0}: yazı tipi belirlenemedi; {1} kullanıldı.</value></data>
+  <data name="Reconstruct.Warning.NeedsAsset" xml:space="preserve"><value>{0} ({1}) için kaynak dosya gerekli; yerine bir yer tutucu çerçeve eklendi.</value></data>
+  <data name="Reconstruct.Warning.Complex" xml:space="preserve"><value>{0} ({1}) güvenilir biçimde yeniden çizilemeyecek kadar karmaşık; yerine bir yer tutucu çerçeve eklendi.</value></data>
+  <data name="Reconstruct.Warning.ImageUsed" xml:space="preserve"><value>{0} ({1}) referanstaki görselden kesilip bitmap olarak yerleştirilecek.</value></data>
+  <data name="Reconstruct.Warning.AssetUsed" xml:space="preserve"><value>{0} ({1}) için varlık kütüphanesindeki “{2}” kullanılacak.</value></data>
+  <data name="Reconstruct.Warning.Rtl" xml:space="preserve"><value>{0}: sağdan sola yazılan metin; yönünü ve harf birleşimlerini CorelDRAW'da kontrol edin.</value></data>
+  <data name="Reconstruct.Warning.Skipped" xml:space="preserve"><value>{0} öğesi yeniden oluşturulamadı ve atlandı ({1}).</value></data>
+  <data name="Reconstruct.Warning.MergedCells" xml:space="preserve"><value>{0}: tabloda birleştirilmiş hücreler olabilir ({1}); bunları elle düzenleyin.</value></data>
+  <data name="Reconstruct.Warning.Arrow" xml:space="preserve"><value>{0}: ok, uçsuz bir çizgi olarak çizilecek; ok ucunu CorelDRAW'da ekleyin.</value></data>
+  <data name="Vision.Kind.Unknown" xml:space="preserve"><value>öğe</value></data>
+  <data name="Vision.Kind.Text" xml:space="preserve"><value>metin</value></data>
+  <data name="Vision.Kind.Rectangle" xml:space="preserve"><value>dikdörtgen</value></data>
+  <data name="Vision.Kind.Ellipse" xml:space="preserve"><value>elips</value></data>
+  <data name="Vision.Kind.Line" xml:space="preserve"><value>çizgi</value></data>
+  <data name="Vision.Kind.Curve" xml:space="preserve"><value>eğri</value></data>
+  <data name="Vision.Kind.Image" xml:space="preserve"><value>görsel</value></data>
+  <data name="Vision.Kind.Table" xml:space="preserve"><value>tablo</value></data>
+  <data name="Vision.Kind.Logo" xml:space="preserve"><value>logo</value></data>
+  <data name="Vision.Kind.Icon" xml:space="preserve"><value>simge</value></data>
+  <data name="Vision.Kind.Polygon" xml:space="preserve"><value>çokgen</value></data>
+  <data name="Vision.Kind.Arrow" xml:space="preserve"><value>ok</value></data>
+  <data name="Vision.Kind.Pictogram" xml:space="preserve"><value>piktogram</value></data>
+  <data name="Vision.Kind.Photo" xml:space="preserve"><value>fotoğraf</value></data>
+  <data name="Vision.Kind.ProhibitionSign" xml:space="preserve"><value>yasak işareti</value></data>
+  <data name="Vision.Kind.Group" xml:space="preserve"><value>grup</value></data>
+  <data name="Vision.Strategy.NativeShape" xml:space="preserve"><value>vektör şekil olarak çizilecek</value></data>
+  <data name="Vision.Strategy.Text" xml:space="preserve"><value>düzenlenebilir metin</value></data>
+  <data name="Vision.Strategy.Table" xml:space="preserve"><value>düzenlenebilir tablo</value></data>
+  <data name="Vision.Strategy.ReuseVector" xml:space="preserve"><value>vektör içerik yeniden kullanılacak</value></data>
+  <data name="Vision.Strategy.UseAsset" xml:space="preserve"><value>varlık kütüphanesinden</value></data>
+  <data name="Vision.Strategy.ImportImage" xml:space="preserve"><value>görsel olarak yerleştirilecek</value></data>
+  <data name="Vision.Strategy.NeedsUserAsset" xml:space="preserve"><value>kaynak dosya gerekli</value></data>
+  <data name="Vision.Strategy.UnsupportedComplexArtwork" xml:space="preserve"><value>karmaşık görsel öğe</value></data>
+  <data name="Reconstruct.Warning.AspectKept" xml:space="preserve"><value>İstenen ölçünün en-boy oranı ({0}) referansınkinden ({1}) farklı; vektör içerik oranı korunarak sayfaya sığdırıldı ve ortalandı.</value></data>
 </root>

@@ -20,6 +20,7 @@ namespace CorelSignStudio.Domain.Automation;
 [JsonDerivedType(typeof(CreateRectangleAction), "createRectangle")]
 [JsonDerivedType(typeof(CreateEllipseAction), "createEllipse")]
 [JsonDerivedType(typeof(CreateLineAction), "createLine")]
+[JsonDerivedType(typeof(CreatePolygonAction), "createPolygon")]
 [JsonDerivedType(typeof(CreateTableAction), "createTable")]
 [JsonDerivedType(typeof(ImportFileAction), "importFile")]
 [JsonDerivedType(typeof(MoveAction), "move")]
@@ -369,6 +370,31 @@ public sealed record CreateLineAction : CreateShapeAction
         if (X1Mm == X2Mm && Y1Mm == Y2Mm)
         {
             errors.Add(Msg.Get("Validation.LineLength"));
+        }
+    }
+}
+
+/// <summary>A straight-edged outline through the given points — triangles, diamonds, arrows, octagons.</summary>
+public sealed record CreatePolygonAction : CreateShapeAction
+{
+    /// <summary>Corner points as [x, y] pairs in millimetres, in drawing order.</summary>
+    public required IReadOnlyList<IReadOnlyList<double>> PointsMm { get; init; }
+
+    /// <summary>True joins the last point back to the first, so the shape can be filled.</summary>
+    public bool Closed { get; init; } = true;
+
+    protected override void ValidateCore(List<string> errors)
+    {
+        base.ValidateCore(errors);
+        if (PointsMm is null || PointsMm.Count < (Closed ? 3 : 2) || PointsMm.Count > 2000)
+        {
+            errors.Add(Msg.Get("Validation.PolygonPoints"));
+            return;
+        }
+
+        if (PointsMm.Any(point => point is null || point.Count != 2 || !double.IsFinite(point[0]) || !double.IsFinite(point[1])))
+        {
+            errors.Add(Msg.Get("Validation.PolygonPointShape"));
         }
     }
 }

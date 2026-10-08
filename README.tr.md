@@ -85,6 +85,48 @@ Bu sayfayı 50x70 cm yap.
 - Yapay zekâ yapılandırılmamışsa veya ulaşılamıyorsa **yerleşik test planlayıcısı** devreye girer.
 - İstek metni ile belgedeki nesnelerin adları, metinleri ve ölçüleri seçtiğiniz sağlayıcıya gönderilir.
 
+## Referans görselinden yeniden oluşturma
+
+Bir JPG, PNG, PDF, SVG veya CDR ekleyip örneğin şunu yazın:
+
+```
+Bunun aynısını 500x700 mm olarak CorelDRAW'da yap.
+Bunun aynısını yap ama alttaki YASAKTIR yazısını GİRİLMEZ olarak değiştir.
+Logoyu görsel olarak kullan ama diğer elemanları vektör olarak yeniden oluştur.
+```
+
+1. **Referansı Analiz Et** — görsel analiz edilir; **Referans Analizi** bölümünde bulunan nesneler, okunan
+   metinler, güven düzeyi ve uyarılar gösterilir.
+2. **Planı Hazırla** — analiz, düzenlenebilir CorelDRAW nesnelerinden oluşan bir plana çevrilir.
+3. **CORELDRAW'DA UYGULA** — plan yeni bir belgede uygulanır.
+
+Ne yapılır:
+
+- Dikdörtgen, elips/daire, çizgi, düz kenarlı çokgen (üçgen, eşkenar dörtgen…), çerçeve ve **yasak işareti**
+  gerçek CorelDRAW şekilleri olarak çizilir; metinler **düzenlenebilir metin**, tablolar **düzenlenebilir tablo** olur.
+- Nesneler arkadan öne doğru oluşturulur; birbirine ait olanlar (ör. üç satırlık yazı bloğu) gruplanır.
+  Belgenin tamamı tek grup yapılmaz.
+- Türkçe ve Arapça metinler olduğu gibi korunur. Net okunamayan metin "emin değil" olarak işaretlenir.
+- **Vektör dosyalar (SVG, CDR, tek sayfalı PDF) yeniden çizilmez**: kendi nesneleri içe aktarılır ve yapay
+  zekâya gönderilmez. Çok sayfalı PDF'de hangi sayfa istendiği sorulur.
+- **Logo ve karmaşık çizimler uydurulmaz.** Varlık kütüphanesinde eşleşen dosya varsa o kullanılır; "görsel
+  olarak kullan" derseniz referanstan kesilen parça yerleştirilir; aksi hâlde pembe çerçeveli, adı
+  "YER TUTUCU: …" olan bir kutu konur ve uyarı verilir.
+
+Fiziksel ölçü kuralları:
+
+- Piksel, milimetre değildir. Yazdığınız ölçü (`500x700 mm`, `50x70 cm`) her zaman önceliklidir.
+- Ölçü yazmadıysanız PDF/SVG/CDR dosyasının kendi sayfa ölçüsü kullanılır.
+- JPG/PNG'de ölçü yazmadıysanız ölçü **tahmin edilmez**, sorulur: "Bu tasarımın gerçek ölçüsü nedir?"
+
+Neler gönderilir: yalnızca **Referansı Analiz Et**'e (veya yeniden oluşturma isteğiyle **Planı Hazırla**'ya)
+bastığınızda, yalnızca seçtiğiniz referansın küçültülmüş bir kopyası yapay zekâ sağlayıcısına gönderilir.
+Başka dosya gönderilmez; görsel içeriği günlüklere yazılmaz.
+
+Sınırlar: fotoğraflar ve karmaşık illüstrasyonlar kusursuz vektöre çevrilemez. Bu özellik tabela, levha,
+etiket, tablo, afiş gibi düzenli tasarımlar içindir. Yazı tipleri yaklaşık eşleştirilir ve bu açıkça belirtilir.
+Sonucun referansla otomatik karşılaştırılıp düzeltilmesi henüz yoktur.
+
 ## Otomasyonlar (reçeteler)
 
 Başarılı bir planı **Otomasyon Olarak Kaydet** ile saklayın. Değişecek değerleri `AD = değer` biçiminde yazın:

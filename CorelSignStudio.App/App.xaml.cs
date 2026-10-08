@@ -5,6 +5,8 @@ using System.Globalization;
 using System.Windows.Markup;
 using CorelSignStudio.AI;
 using CorelSignStudio.Corel;
+using CorelSignStudio.Domain.Ai.Vision;
+using CorelSignStudio.Imaging;
 using CorelSignStudio.Domain.Ai;
 using CorelSignStudio.Domain.Localization;
 using CorelSignStudio.Domain.Planning;
@@ -18,6 +20,7 @@ public partial class App : Application
 {
     private CorelAutomationService? _corelService;
     private MainWindow? _legacyWindow;
+    private ReferenceTempStore? _referenceTemp;
 
     protected override void OnStartup(StartupEventArgs e)
     {
@@ -45,6 +48,7 @@ public partial class App : Application
             new DeterministicCommandPlanner(),
             () => aiRuntime.Planner,
             () => aiRuntime.Settings.PlannerMode);
+        _referenceTemp = new ReferenceTempStore();
         var viewModel = new OperatorViewModel(new OperatorServices(
             Corel: _corelService,
             Inspector: new CorelDocumentInspector(_corelService),
@@ -54,6 +58,13 @@ public partial class App : Application
             Recipes: new JsonRecipeStore(Path.Combine(dataFolder, "recipes")),
             Assets: new JsonAssetLibrary(Path.Combine(dataFolder, "assets")),
             History: new JsonExecutionHistoryStore(Path.Combine(dataFolder, "history")),
+            Vision: new AiReferenceAnalyzer(
+                () => aiRuntime.Client,
+                // JPG/PNG/PDF/SVG are read locally; CDR is read by CorelDRAW itself once it is connected.
+                CompositeReferencePreviewRenderer.CreateDefault(new CorelReferencePreviewRenderer(_corelService))),
+            Reconstruction: new ReferenceReconstructionPlanner(
+                new InstalledFontResolver(System.Windows.Media.Fonts.SystemFontFamilies.Select(family => family.Source)),
+                new SkiaReferenceImageCropper(_referenceTemp)),
             ReferenceAnalyzer: new FileReferenceAnalyzer(),
             ReferencePlanBuilder: new ImportReferencePlanBuilder(),
             Shell: shell,
@@ -115,6 +126,7 @@ public partial class App : Application
             _corelService.DisposeAsync().AsTask().GetAwaiter().GetResult();
         }
 
+        _referenceTemp?.Dispose();
         base.OnExit(e);
     }
 
@@ -122,9 +134,22 @@ public partial class App : Application
     {
         try
         {
-            // Show a prepared plan in the first screenshot; planning needs no CorelDRAW connection.
-            viewModel.Request = "500x700 mm belge oluştur\nOrtaya GİRİŞ YASAKTIR yaz\n8 sütun 20 satır tablo oluştur\nOnu sil\nLogoyu daha şık yap";
-            viewModel.PreparePlanCommand.Execute(null);
+            // Exercise the reference flow without CorelDRAW or an AI call: a vector reference is analysed
+            // locally (it is never uploaded) and rebuilt by importing it at the requested size.
+            var sample = Path.Combine(AppContext.BaseDirectory, "assets", "icons", "no-entry-hand.svg");
+            if (File.Exists(sample))
+            {
+                viewModel.AddReferences([sample]);
+                viewModel.Request = "Bunun aynısını 500x700 mm olarak CorelDRAW'da yap.";
+                viewModel.PreparePlanCommand.Execute(null);
+            }
+            else
+            {
+                viewModel.Request = "500x700 mm belge oluştur\nOrtaya GİRİŞ YASAKTIR yaz";
+                viewModel.PreparePlanCommand.Execute(null);
+            }
+
+            await Task.Delay(600);
             string[] names = ["operator", "document", "recipes", "batch", "assets", "history", "settings"];
             for (var index = 0; index < names.Length; index++)
             {

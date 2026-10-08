@@ -19,6 +19,7 @@ internal static class AutomationTestData
         new CreateRectangleAction { Id = "rect", XMm = 10, YMm = 10, WidthMm = 100, HeightMm = 50, CornerRadiusMm = 3, FillColor = "#FFFFFF", OutlineColor = "#000000", OutlineWidthMm = 0.5 },
         new CreateEllipseAction { Id = "ellipse", XMm = 20, YMm = 20, WidthMm = 60, HeightMm = 60, Layer = "Artwork" },
         new CreateLineAction { Id = "line", X1Mm = 0, Y1Mm = 0, X2Mm = 100, Y2Mm = 0, OutlineWidthMm = 1 },
+        new CreatePolygonAction { Id = "triangle", PointsMm = [[100, 20], [180, 160], [20, 160]], FillColor = "#FFFF00", OutlineColor = "#000000", OutlineWidthMm = 2 },
         new CreateTableAction
         {
             Id = "table", XMm = 10, YMm = 10, WidthMm = 180, HeightMm = 100, Columns = 2, Rows = 2,

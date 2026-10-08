@@ -79,59 +79,6 @@ public sealed record ReferenceInput
     }
 }
 
-public enum ReferenceElementKind
-{
-    Unknown,
-    Text,
-    Rectangle,
-    Ellipse,
-    Line,
-    Curve,
-    Image,
-    Table,
-    Logo,
-    Icon,
-}
-
-/// <summary>One thing an analyzer found in a reference, in millimetres from the top-left corner.</summary>
-public sealed record ReferenceElement
-{
-    public ReferenceElementKind Kind { get; init; }
-    public double XMm { get; init; }
-    public double YMm { get; init; }
-    public double WidthMm { get; init; }
-    public double HeightMm { get; init; }
-    public string? Text { get; init; }
-    public string? FontFamily { get; init; }
-    public double? FontSizePt { get; init; }
-    public string? FillColor { get; init; }
-    public string? OutlineColor { get; init; }
-
-    /// <summary>0..1; how sure the analyzer is.</summary>
-    public double Confidence { get; init; } = 1;
-}
-
-/// <summary>What an analyzer (file-based today, AI vision later) learned about a reference.</summary>
-public sealed record ReferenceAnalysis
-{
-    public required string ReferenceId { get; init; }
-    public required string AnalyzerName { get; init; }
-    public ReferenceFileType FileType { get; init; }
-    public long FileSizeBytes { get; init; }
-    public double? WidthMm { get; init; }
-    public double? HeightMm { get; init; }
-    public int? PixelWidth { get; init; }
-    public int? PixelHeight { get; init; }
-
-    /// <summary>True when the file's own geometry can be imported and edited instead of redrawn.</summary>
-    public bool CanReuseVectorContent { get; init; }
-
-    public IReadOnlyList<ReferenceElement> Elements { get; init; } = [];
-    public IReadOnlyList<string> Colors { get; init; } = [];
-    public IReadOnlyList<string> Fonts { get; init; } = [];
-    public IReadOnlyList<string> Notes { get; init; } = [];
-}
-
 /// <summary>Extension point for file inspection, OCR and AI vision.</summary>
 public interface IReferenceAnalyzer
 {

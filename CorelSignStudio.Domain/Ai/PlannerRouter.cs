@@ -82,10 +82,18 @@ public sealed class LoggingAiClient(IAiClient inner, Action<string> log, Func<bo
 
     public string Model => inner.Model;
 
+    public bool SupportsImages => inner.SupportsImages;
+
     public async Task<AiResponse> CompleteAsync(AiRequest request, CancellationToken cancellationToken = default)
     {
         var verbose = enabled();
         log($"AI request → {inner.ProviderId}/{inner.Model}: system {request.SystemPrompt.Length} chars, user {request.UserMessage.Length} chars, schema {(request.JsonSchema is null ? "no" : "yes")}.");
+        // Images are described by metadata only — never their bytes, in any logging mode.
+        foreach (var image in request.Images)
+        {
+            log("AI request image: " + image.Describe());
+        }
+
         if (verbose)
         {
             log("AI request body (debug):\n" + request.UserMessage);
