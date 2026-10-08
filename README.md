@@ -63,7 +63,7 @@ The first provider is the Claude API via the official Anthropic C# SDK, in `Core
 - Ambiguous requests return `NeedsClarification` with a question; the answer is planned with the earlier turns.
 - `PlannerRouter` uses the AI planner when configured and selected, otherwise `DeterministicCommandPlanner`,
   which also takes over when the provider is unreachable and it understands the whole request.
-- Settings and the API key live in `%LOCALAPPDATA%\CorelSignStudioi-settings.json`; the key is encrypted
+- Settings and the API key live in `%LOCALAPPDATA%\CorelSignStudio\ai-settings.json`; the key is encrypted
   with Windows DPAPI for the current user. `ANTHROPIC_API_KEY` is used when no key is stored.
 - Tests use a scripted mock `IAiClient`; no real API call is made.
 
