@@ -13,6 +13,9 @@ public sealed record ReferenceAnalysisRequest
 
     /// <summary>1-based page for multi-page sources, when already known.</summary>
     public int? PageNumber { get; init; }
+
+    /// <summary>True to analyse again even if an identical request was answered earlier in this session.</summary>
+    public bool BypassCache { get; init; }
 }
 
 public sealed record ReferenceAnalysisResult

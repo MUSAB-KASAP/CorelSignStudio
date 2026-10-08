@@ -127,15 +127,37 @@ public static class VariableSubstitution
     public static string Apply(string text, IReadOnlyDictionary<string, string> values, ICollection<string>? errors = null) =>
         PlaceholderSyntax.Pattern().Replace(text, match =>
         {
-            var name = match.Groups[1].Value;
-            if (TryGet(values, name, out var value))
+            var content = match.Groups[1].Value.Trim();
+            if (PlaceholderExpression.IsName(content))
             {
-                return value;
+                if (TryGet(values, content, out var value))
+                {
+                    return value;
+                }
+
+                Report(errors, Msg.Format("Recipe.VariableNoValue", content));
+                return match.Value;
             }
 
-            Report(errors, Msg.Format("Recipe.VariableNoValue", name));
+            // Derived value such as {{WIDTH_MM / 2}}.
+            if (TryEvaluate(content, values, errors, out var computed))
+            {
+                return PlaceholderExpression.Format(computed);
+            }
+
             return match.Value;
         });
+
+    private static bool TryEvaluate(string content, IReadOnlyDictionary<string, string> values, ICollection<string>? errors, out double value)
+    {
+        if (PlaceholderExpression.TryEvaluate(content, name => TryGet(values, name, out var raw) ? raw : null, out value, out var error))
+        {
+            return true;
+        }
+
+        Report(errors, Msg.Format("Recipe.ExpressionError", content, error));
+        return false;
+    }
 
     /// <summary>
     /// Replaces placeholders in every string value of <paramref name="node"/>. A value that is exactly one
@@ -191,9 +213,17 @@ public static class VariableSubstitution
         ICollection<string> errors)
     {
         var whole = PlaceholderSyntax.WholeValuePattern().Match(text);
+        if (whole.Success && !PlaceholderExpression.IsName(whole.Groups[1].Value))
+        {
+            // A value that is one whole expression becomes a real JSON number.
+            return TryEvaluate(whole.Groups[1].Value.Trim(), values, errors, out var computed)
+                ? JsonValue.Create(Math.Round(computed, 4))
+                : JsonValue.Create(text);
+        }
+
         if (whole.Success)
         {
-            var name = whole.Groups[1].Value;
+            var name = whole.Groups[1].Value.Trim();
             var type = RecipeVariableType.Text;
             types?.TryGetValue(name, out type);
             if (type != RecipeVariableType.Text && TryGet(values, name, out var raw))

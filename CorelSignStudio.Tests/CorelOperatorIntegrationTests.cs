@@ -587,6 +587,128 @@ public sealed class CorelOperatorIntegrationTests : IClassFixture<CorelOperatorF
         }
     }
 
+    /// <summary>
+    /// comparison → correction plan → CorelDRAW executor, on the real application: a sign is built, then
+    /// deliberately damaged (title 20 mm too low, ring 10 % too large); the measured comparison finds both,
+    /// the bounded loop corrects them, and the full-page preview is rendered without touching the document.
+    /// No AI is involved.
+    /// </summary>
+    [Fact]
+    [Trait("Category", "CorelIntegration")]
+    public async Task Measured_differences_are_corrected_in_coreldraw_and_the_page_preview_leaves_the_document_untouched()
+    {
+        if (!Enabled)
+        {
+            output.WriteLine("Set COREL_INTEGRATION=1 to run the installed-CorelDRAW correction test.");
+            return;
+        }
+
+        var outputRoot = PrepareOutputFolder("correction");
+        var service = fixture.Service!;
+        var inspector = new CorelDocumentInspector(service);
+        var executor = new CorelActionExecutor(service);
+        var previewRenderer = new CorelPagePreviewRenderer(service);
+        var userHadDocumentOpen = await inspector.InspectActiveDocumentAsync() is not null;
+        var (plan, expected, _) = await V1Fixtures.Sign();
+        var size = new Domain.References.PhysicalSize(500, 700);
+
+        try
+        {
+            // 1. Build the 500 x 700 mm sign.
+            await Run(executor, plan);
+            var built = (await inspector.InspectActiveDocumentAsync())!;
+            var comparer = new Domain.References.VisualComparisonService();
+            var faithful = await comparer.CompareAsync(new Domain.References.VisualComparisonRequest { Expected = expected, Document = built, Size = size });
+            output.WriteLine($"After reconstruction: similarity {faithful.Similarity:0.000}; {string.Join(" | ", faithful.Differences.Select(difference => difference.Description))}");
+            Assert.True(faithful.Similarity >= 0.98, "a fresh reconstruction should match what it was built from");
+
+            // 2–3. Damage it on purpose.
+            var title = built.FindShapesByName(V1Fixtures.Title).Single();
+            var ring = built.FindShapesByName(V1Fixtures.Ring).Single(shape => shape.Type == ShapeKind.Ellipse);
+            await Run(executor, new AutomationPlan
+            {
+                Name = "Damage",
+                Actions =
+                [
+                    new MoveAction { Id = "low", Targets = [title.Id], DeltaYMm = 20 },
+                    new ResizeAction { Id = "big", Targets = [ring.Id], ScalePercent = 110 },
+                ],
+            });
+
+            // 4. Full-page preview: whole page, right proportions, and the document is exactly as before.
+            var before = (await inspector.InspectActiveDocumentAsync())!;
+            var preview = await previewRenderer.RenderActivePageAsync(1000);
+            var after = (await inspector.InspectActiveDocumentAsync())!;
+            Assert.Equal("image/png", preview.MimeType);
+            Assert.Equal(1000, preview.HeightPixels);
+            Assert.InRange(preview.WidthPixels, 712, 716);                      // 500 : 700
+            Assert.Equal(size, preview.PhysicalSize);
+            Assert.True(preview.Bytes.Length > 1000);
+            Assert.Equal(before.AllShapes().Select(Describe), after.AllShapes().Select(Describe));
+            await File.WriteAllBytesAsync(Path.Combine(outputRoot, "tam-sayfa-onizleme.png"), preview.Bytes);
+            using (var image = SkiaSharp.SKBitmap.Decode(preview.Bytes))
+            {
+                var corner = image.GetPixel(2, 2);                               // page margin outside the frame: white, not transparent
+                Assert.True(corner is { Red: > 240, Green: > 240, Blue: > 240, Alpha: 255 }, corner.ToString());
+            }
+
+            // 5. Compare: both defects are measured.
+            var damaged = await comparer.CompareAsync(new Domain.References.VisualComparisonRequest { Expected = expected, Document = after, Size = size });
+            output.WriteLine($"Damaged: similarity {damaged.Similarity:0.000}");
+            foreach (var difference in damaged.Differences)
+            {
+                output.WriteLine("  - " + difference.Description);
+            }
+
+            var low = damaged.Differences.Single(difference => difference.Kind == Domain.References.DifferenceKind.Position && difference.ShapeName == V1Fixtures.Title);
+            Assert.Equal(20, low.DeltaYMm, 0);
+            Assert.Contains(damaged.Differences, difference => difference.Kind == Domain.References.DifferenceKind.Size && difference.ShapeName == V1Fixtures.Ring);
+            Assert.True(damaged.Similarity < faithful.Similarity - 0.03);
+
+            // 6–8. Bounded automatic improvement on the real document.
+            var loop = new Domain.References.VisualImprovementLoop(inspector, executor, comparer, new Domain.References.VisualCorrectionPlanner(), previewRenderer);
+            var improvement = await loop.RunAsync(new Domain.References.ImprovementRequest { Expected = expected, Size = size });
+            foreach (var pass in improvement.Passes)
+            {
+                output.WriteLine($"Pass {pass.Number}: {pass.SimilarityBefore:0.000} -> {pass.SimilarityAfter:0.000} ({string.Join(" | ", pass.Corrections)})");
+            }
+
+            Assert.Equal(Domain.References.ImprovementStopReason.TargetReached, improvement.StopReason);
+            Assert.InRange(improvement.Passes.Count, 1, 3);
+            Assert.True(improvement.FinalSimilarity > damaged.Similarity);
+
+            // 9. The geometry is back where the reference says it should be.
+            var corrected = (await inspector.InspectActiveDocumentAsync())!;
+            var titleAfter = corrected.FindShape(title.Id)!;
+            Assert.Equal(title.Bounds.CenterYMm, titleAfter.Bounds.CenterYMm, 0);
+            Assert.Equal("YASAKTIR", titleAfter.Text);
+            var ringAfter = corrected.FindShape(ring.Id)!;
+            Assert.Equal(270, ringAfter.Bounds.WidthMm, 0);
+            Assert.Equal(250, ringAfter.Bounds.CenterXMm, 0);
+            Assert.Equal(before.ShapeCount, corrected.ShapeCount);
+
+            // 10. Production files.
+            var files = await Run(executor, new AutomationPlan
+            {
+                Name = "Outputs",
+                Actions =
+                [
+                    new SaveDocumentAction { Id = "cdr", FilePath = Path.Combine(outputRoot, "duzeltilmis.cdr") },
+                    new ExportPdfAction { Id = "pdf", FilePath = Path.Combine(outputRoot, "duzeltilmis.pdf") },
+                    new ExportPngAction { Id = "png", FilePath = Path.Combine(outputRoot, "duzeltilmis.png"), Dpi = 72 },
+                ],
+            });
+            Assert.Equal(3, files.ProducedFiles.Count);
+        }
+        finally
+        {
+            await CloseTestDocuments(inspector, executor, userHadDocumentOpen);
+        }
+
+        static string Describe(ShapeSnapshot shape) =>
+            FormattableString.Invariant($"{shape.Id}|{shape.Type}|{shape.Name}|{shape.Text}|{shape.Bounds.XMm:0.00}|{shape.Bounds.YMm:0.00}|{shape.Bounds.WidthMm:0.00}|{shape.Bounds.HeightMm:0.00}");
+    }
+
     private async Task<PlanExecutionResult> Run(CorelActionExecutor executor, AutomationPlan plan)
     {
         var result = await executor.ExecuteAsync(plan);
