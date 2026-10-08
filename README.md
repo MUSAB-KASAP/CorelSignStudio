@@ -30,6 +30,7 @@ Recipe + rows  ─► BatchExpander ─► one AutomationPlan per row ─► Bat
 - `CorelSignStudio.Corel` — the only project that touches CorelDRAW COM. Every call runs on one dedicated STA thread.
   `CorelAutomationService` (connection, verified save/export), `CorelDocumentInspector`, `CorelActionExecutor`.
 - `CorelSignStudio.AI` — AI provider implementation (Anthropic SDK) and per-user AI settings with a DPAPI-encrypted key.
+- `CorelSignStudio.Imaging` — reference previews (SkiaSharp, PDFtoImage/PDFium), SVG size reader, component cropper.
 - `CorelSignStudio.Storage` — JSON stores for recipes, assets and history; CSV batch reader; file-based reference analyzer.
 - `CorelSignStudio.App` — the operator window (Operator, Current document, Automation recipes, Batch jobs, Assets, History, Settings).
   The original sign-template window is still available from Settings.
@@ -66,6 +67,37 @@ The first provider is the Claude API via the official Anthropic C# SDK, in `Core
 - Settings and the API key live in `%LOCALAPPDATA%\CorelSignStudio\ai-settings.json`; the key is encrypted
   with Windows DPAPI for the current user. `ANTHROPIC_API_KEY` is used when no key is stored.
 - Tests use a scripted mock `IAiClient`; no real API call is made.
+
+## Reference vision and reconstruction
+
+```
+ReferenceInput -> IReferencePreviewRenderer -> AiReferenceAnalyzer -> ReferenceAnalysis
+               -> ReferenceReconstructionPlanner -> AutomationPlan -> existing executor
+```
+
+- **What it does.** A reference is analysed into a structured description (`ref_NNN` elements with 0..1 bounds,
+  z-order, groups, text, colours, tables, a reconstruction strategy and confidence) and then converted
+  deterministically into existing actions: native rectangles, ellipses, lines, polygons, prohibition signs,
+  editable text fitted to its analysed width, native tables, groups — created back to front.
+- **File types.** JPG/PNG: EXIF-corrected, downscaled preview sent to the vision model. PDF: page preview via
+  PDFtoImage (MIT) on PDFium (BSD-3/Apache-2.0); multi-page PDFs require an explicit page. SVG: declared size is
+  read. CDR: size is read by CorelDRAW itself (no parser is invented); without CorelDRAW the size is unknown.
+- **Vector reuse.** SVG, CDR and single-page PDF are imported, not redrawn, and are never uploaded.
+- **Physical size.** Pixels are not millimetres. A size in the request (mm, cm, m) wins; otherwise the page size of
+  a PDF/SVG/CDR; otherwise the user is asked. A raster's DPI tag is never trusted.
+- **Honesty about artwork.** Logos and complex pictograms are not approximated with invented shapes: a matching
+  library asset is used, or a crop of that component when the user asks for the bitmap, or a clearly named
+  placeholder with a warning. The whole reference is never pasted in as one bitmap.
+- **What is sent.** Only when the user starts an analysis (or prepares a reconstruction plan), only the selected
+  reference's downscaled preview, to the configured provider. Image bytes are never logged — only file name,
+  MIME type, pixel size and byte count.
+- **Provider neutrality.** `AiRequest.Images` / `IAiClient.SupportsImages`; the Anthropic client is the first
+  implementation. `IVisualComparisonService` is defined for the next milestone (compare output with reference).
+- **Validation.** Unit tests use a scripted client and synthetic fixtures drawn by the tests. The opt-in
+  CorelDRAW test rebuilds a sign in the real application and saves CDR/PDF; that part cannot run in the cloud.
+- **Limits.** Not a general vector tracer: photographs and complex illustrations are not converted. Fonts are
+  matched approximately (exact / likely / fallback is reported). Right-to-left text is created as written and
+  flagged for checking. Merged table cells are reported, not reproduced. No automatic visual comparison yet.
 
 ## Language
 

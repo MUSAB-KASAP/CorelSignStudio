@@ -290,4 +290,5 @@
   <data name="Vision.Strategy.ImportImage" xml:space="preserve"><value>görsel olarak yerleştirilecek</value></data>
   <data name="Vision.Strategy.NeedsUserAsset" xml:space="preserve"><value>kaynak dosya gerekli</value></data>
   <data name="Vision.Strategy.UnsupportedComplexArtwork" xml:space="preserve"><value>karmaşık görsel öğe</value></data>
+  <data name="Reconstruct.Warning.AspectKept" xml:space="preserve"><value>İstenen ölçünün en-boy oranı ({0}) referansınkinden ({1}) farklı; vektör içerik oranı korunarak sayfaya sığdırıldı ve ortalandı.</value></data>
 </root>

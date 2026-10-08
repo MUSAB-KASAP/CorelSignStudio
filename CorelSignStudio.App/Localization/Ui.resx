@@ -219,7 +219,7 @@ Devam etmek istiyor musunuz?</value></data>
   <data name="Settings.Ai.KeyRemoved" xml:space="preserve"><value>Kayıtlı API anahtarı silindi.</value></data>
   <data name="Settings.Ai.Testing" xml:space="preserve"><value>Bağlantı deneniyor…</value></data>
   <data name="Settings.Ai.TestOk" xml:space="preserve"><value>Bağlantı başarılı. Model: {0}</value></data>
-  <data name="Settings.Ai.PrivacyHint" xml:space="preserve"><value>Yapay zekâ planlayıcısı kullanılırken yazdığınız istek ve açık belgedeki nesnelerin adları, metinleri ve ölçüleri seçtiğiniz sağlayıcıya gönderilir. API anahtarı Windows hesabınıza özel olarak şifrelenir; proje klasörüne veya günlüklere yazılmaz.</value></data>
+  <data name="Settings.Ai.PrivacyHint" xml:space="preserve"><value>Yapay zekâ kullanılırken yazdığınız istek ile açık belgedeki nesnelerin adları, metinleri ve ölçüleri seçtiğiniz sağlayıcıya gönderilir. “Referansı Analiz Et” dediğinizde yalnızca seçtiğiniz referans görseli gönderilir; başka hiçbir dosya gönderilmez. API anahtarı Windows hesabınıza özel olarak şifrelenir; proje klasörüne veya günlüklere yazılmaz.</value></data>
   <data name="Settings.Ai.StoredAt" xml:space="preserve"><value>Ayar dosyası: {0}</value></data>
   <data name="Status.AiPlanning" xml:space="preserve"><value>Yapay zekâ plan hazırlıyor</value></data>
   <data name="Status.AiTesting" xml:space="preserve"><value>Yapay zekâ bağlantısı deneniyor</value></data>
@@ -228,4 +228,29 @@ Devam etmek istiyor musunuz?</value></data>
   <data name="Plan.Warnings" xml:space="preserve"><value>  Uyarılar: {0}</value></data>
   <data name="Log.AiAsks" xml:space="preserve"><value>Yapay zekâ soruyor: {0}</value></data>
   <data name="Log.AiSettingsSaved" xml:space="preserve"><value>Yapay zekâ ayarları kaydedildi. Etkin planlayıcı: {0}.</value></data>
+  <data name="Operator.AnalyzeReference" xml:space="preserve"><value>Referansı Analiz Et</value></data>
+  <data name="Operator.AnalysisHeader" xml:space="preserve"><value>Referans Analizi</value></data>
+  <data name="Operator.AnalyzeTip" xml:space="preserve"><value>Seçili referans görseli, analiz için yapay zekâ sağlayıcısına gönderilir. Vektör dosyalar (SVG, CDR, tek sayfalı PDF) gönderilmez.</value></data>
+  <data name="Status.Analyzing" xml:space="preserve"><value>Referans analiz ediliyor</value></data>
+  <data name="Status.Analyzed" xml:space="preserve"><value>Referans analiz edildi — özeti inceleyip “Planı Hazırla” düğmesine basın</value></data>
+  <data name="Plan.NoReference" xml:space="preserve"><value>Önce bir referans dosyası ekleyin.</value></data>
+  <data name="Plan.Question" xml:space="preserve"><value>{0}  Yanıtınızı yukarıdaki kutuya yazıp yeniden “Planı Hazırla” düğmesine basın.</value></data>
+  <data name="Log.Analyzed" xml:space="preserve"><value>{0} analiz edildi: {1} öğe.</value></data>
+  <data name="Analysis.Source" xml:space="preserve"><value>Kaynak Dosya: {0}</value></data>
+  <data name="Analysis.Page" xml:space="preserve"><value>Sayfa: {0} / {1}</value></data>
+  <data name="Analysis.Size" xml:space="preserve"><value>Fiziksel Ölçü: {0}</value></data>
+  <data name="Analysis.SizeNeeded" xml:space="preserve"><value>Fiziksel Ölçü: Ölçü gerekli — isteğinize ölçüyü yazın (örneğin 500x700 mm).</value></data>
+  <data name="Analysis.Vector" xml:space="preserve"><value>Vektör içerik yeniden kullanılacak (yeniden çizilmeyecek).</value></data>
+  <data name="Analysis.Detected" xml:space="preserve"><value>Algılanan Nesneler:</value></data>
+  <data name="Analysis.Count" xml:space="preserve"><value> - {0} {1}</value></data>
+  <data name="Analysis.Texts" xml:space="preserve"><value>Algılanan Metinler:</value></data>
+  <data name="Analysis.TextLine" xml:space="preserve"><value> - “{0}”{1}</value></data>
+  <data name="Analysis.TextUncertain" xml:space="preserve"><value> (emin değil, kontrol edin)</value></data>
+  <data name="Analysis.Special" xml:space="preserve"><value>Özel Öğeler:</value></data>
+  <data name="Analysis.SpecialLine" xml:space="preserve"><value> - {0}: {1}</value></data>
+  <data name="Analysis.Confidence" xml:space="preserve"><value>Güven Düzeyi: %{0}</value></data>
+  <data name="Analysis.Modifications" xml:space="preserve"><value>Uygulanan Değişiklikler:</value></data>
+  <data name="Analysis.Warnings" xml:space="preserve"><value>Uyarılar:</value></data>
+  <data name="Analysis.Line" xml:space="preserve"><value> - {0}</value></data>
+  <data name="Analysis.SizeFromRequest" xml:space="preserve"><value>Fiziksel Ölçü: {0} (isteğinizden)</value></data>
 </root>

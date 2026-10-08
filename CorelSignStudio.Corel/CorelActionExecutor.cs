@@ -776,13 +776,34 @@ internal sealed class CorelAutomationSession(object applicationObject, Action<st
             range.Add(shape);
         }
 
-        dynamic group = range.Group();
-        if (!string.IsNullOrWhiteSpace(action.Name))
+        // Observed with CorelDRAW 2026: ShapeRange.Group() can return nothing even though the group was
+        // created (seen with artistic text). The new group is then the members' common parent.
+        object? group = range.Group();
+        group ??= ((dynamic)shapes[0]).ParentGroup;
+        if (group is null)
         {
-            group.Name = action.Name;
+            // Last resort: group through the selection, which always yields the group shape.
+            dynamic document = Document;
+            document.ClearSelection();
+            foreach (dynamic shape in shapes)
+            {
+                shape.AddToSelection();
+            }
+
+            group = document.Selection().Group();
         }
 
-        return Created(action, (object)group);
+        if (group is null)
+        {
+            throw new InvalidOperationException(Msg.Get("Corel.ComFailure"));
+        }
+
+        if (!string.IsNullOrWhiteSpace(action.Name))
+        {
+            ((dynamic)group).Name = action.Name;
+        }
+
+        return Created(action, group);
     }
 
     private ActionOutcome Ungroup(UngroupAction action)

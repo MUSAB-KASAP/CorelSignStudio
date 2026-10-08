@@ -135,12 +135,17 @@ public sealed class ReferenceReconstructionPlanner(IFontResolver? fontResolver =
         var builder = new Builder(size, _fonts, cropper, request);
         builder.Actions.Add(new CreateDocumentAction { Id = "doc", WidthMm = size.WidthMm, HeightMm = size.HeightMm });
 
-        if (analysis.AspectRatio is { } referenceAspect && referenceAspect > 0 && Math.Abs((size.AspectRatio / referenceAspect) - 1) > 0.03)
+        var reuseVector = analysis.CanReuseVectorContent && analysis.Elements.All(element => element.Strategy == ReconstructionStrategy.ReuseVector);
+        var aspectDiffers = analysis.AspectRatio is { } referenceAspect && referenceAspect > 0 && Math.Abs((size.AspectRatio / referenceAspect) - 1) > 0.03;
+        if (aspectDiffers)
         {
-            builder.Warnings.Add(Msg.Format("Reconstruct.Warning.AspectMismatch", Ratio(size.AspectRatio), Ratio(referenceAspect)));
+            // Redrawn layouts stretch to the new proportions; imported vectors keep theirs and are centred.
+            builder.Warnings.Add(Msg.Format(
+                reuseVector ? "Reconstruct.Warning.AspectKept" : "Reconstruct.Warning.AspectMismatch",
+                Ratio(size.AspectRatio), Ratio(analysis.AspectRatio!.Value)));
         }
 
-        if (analysis.CanReuseVectorContent && analysis.Elements.All(element => element.Strategy == ReconstructionStrategy.ReuseVector))
+        if (reuseVector)
         {
             // Keep the reference's own vectors: import them at the target size instead of redrawing.
             builder.Actions.Add(new ImportFileAction
@@ -152,6 +157,11 @@ public sealed class ReferenceReconstructionPlanner(IFontResolver? fontResolver =
                 YMm = 0,
                 FitWidthMm = size.WidthMm,
                 FitHeightMm = size.HeightMm,
+            });
+            builder.Actions.Add(new AlignAction
+            {
+                Id = "ref_001_center", Targets = [TargetRef.ForAction("ref_001")],
+                Horizontal = HorizontalAlign.Center, Vertical = VerticalAlign.Center, RelativeTo = AlignReference.Page,
             });
             builder.ElementActions["ref_001"] = ["ref_001"];
         }

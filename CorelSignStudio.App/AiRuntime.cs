@@ -12,6 +12,7 @@ public sealed class AiRuntime(AiSettingsStore store, Action<string> log)
     private readonly object _gate = new();
     private AiSettings _settings = store.Load();
     private IAiCommandPlanner? _planner;
+    private IAiClient? _client;
     private bool _plannerBuilt;
 
     public AiSettings Settings
@@ -40,15 +41,35 @@ public sealed class AiRuntime(AiSettingsStore store, Action<string> log)
         {
             lock (_gate)
             {
-                if (!_plannerBuilt)
-                {
-                    _planner = CreateClient() is { } client ? new AiCommandPlanner(client) : null;
-                    _plannerBuilt = true;
-                }
-
+                EnsureBuilt();
                 return _planner;
             }
         }
+    }
+
+    /// <summary>The configured provider client (with logging), or <c>null</c>. Shared by the planner and the vision analyzer.</summary>
+    public IAiClient? Client
+    {
+        get
+        {
+            lock (_gate)
+            {
+                EnsureBuilt();
+                return _client;
+            }
+        }
+    }
+
+    private void EnsureBuilt()
+    {
+        if (_plannerBuilt)
+        {
+            return;
+        }
+
+        _client = CreateClient();
+        _planner = _client is null ? null : new AiCommandPlanner(_client);
+        _plannerBuilt = true;
     }
 
     /// <param name="settings">New non-secret settings.</param>

@@ -170,10 +170,28 @@
                             </Border>
                             <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,8,0,14">
                                 <Button Content="{local:Loc Common.AddFiles}" Command="{Binding AddReferenceCommand}" Padding="10,5" FontSize="12" Margin="0,0,8,0"/>
-                                <Button Content="{local:Loc Common.Remove}" Command="{Binding RemoveReferenceCommand}" Padding="10,5" FontSize="12"/>
+                                <Button Content="{local:Loc Common.Remove}" Command="{Binding RemoveReferenceCommand}" Padding="10,5" FontSize="12" Margin="0,0,8,0"/>
+                                <Button Content="{local:Loc Operator.AnalyzeReference}" Command="{Binding AnalyzeReferenceCommand}" Padding="10,5" FontSize="12"
+                                        ToolTip="{local:Loc Operator.AnalyzeTip}"/>
                             </StackPanel>
 
-                            <TextBlock Grid.Row="3" Text="{local:Loc Operator.RequestTitle}" Style="{StaticResource SectionTitle}"/>
+                            <StackPanel Grid.Row="3">
+                                <Expander Header="{local:Loc Operator.AnalysisHeader}" IsExpanded="True" Margin="0,0,0,12" FontFamily="Segoe UI Semibold" FontSize="12.5">
+                                    <Expander.Style>
+                                        <Style TargetType="Expander">
+                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding HasAnalysis}" Value="True">
+                                                    <Setter Property="Visibility" Value="Visible"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Expander.Style>
+                                    <TextBox Text="{Binding AnalysisSummary, Mode=OneWay}" IsReadOnly="True" TextWrapping="Wrap" FontFamily="Segoe UI" FontSize="12.5"
+                                             Background="#FAFBFC" BorderBrush="#E6EAEE" MaxHeight="190" VerticalScrollBarVisibility="Auto" Margin="0,6,0,0"/>
+                                </Expander>
+                                <TextBlock Text="{local:Loc Operator.RequestTitle}" Style="{StaticResource SectionTitle}"/>
+                            </StackPanel>
                             <TextBox Grid.Row="4" Text="{Binding Request, UpdateSourceTrigger=PropertyChanged}" AcceptsReturn="True" TextWrapping="Wrap"
                                      VerticalScrollBarVisibility="Auto" VerticalContentAlignment="Top" MinHeight="110"/>
                             <Expander Grid.Row="5" Header="{local:Loc Operator.ExamplesHeader}" Margin="0,8,0,0" FontSize="12"

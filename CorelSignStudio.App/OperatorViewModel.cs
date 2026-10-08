@@ -4,6 +4,7 @@ using System.IO;
 using CorelSignStudio.AI;
 using CorelSignStudio.Corel;
 using CorelSignStudio.Domain.Ai;
+using CorelSignStudio.Domain.Ai.Vision;
 using CorelSignStudio.Domain.Assets;
 using CorelSignStudio.Domain.Automation;
 using CorelSignStudio.Domain.Batch;
@@ -44,6 +45,8 @@ public sealed record OperatorServices(
     IRecipeStore Recipes,
     IAssetLibrary Assets,
     IExecutionHistoryStore History,
+    IReferenceVisionAnalyzer Vision,
+    IReferenceReconstructionPlanner Reconstruction,
     IReferenceAnalyzer ReferenceAnalyzer,
     IReferencePlanBuilder ReferencePlanBuilder,
     IDesktopShellService Shell,
@@ -55,7 +58,7 @@ public sealed record OperatorServices(
 /// View model of the operator control centre. It never touches COM: it talks to CorelDRAW only through
 /// the inspector/executor abstractions and shows plans for review before anything is executed.
 /// </summary>
-public sealed class OperatorViewModel : ObservableObject
+public sealed partial class OperatorViewModel : ObservableObject
 {
     private readonly OperatorServices _services;
     private readonly List<AsyncRelayCommand> _asyncCommands = [];
@@ -100,6 +103,11 @@ public sealed class OperatorViewModel : ObservableObject
     private bool _aiDebugLogging;
     private string _aiTestResult = "";
     private readonly List<PlanningTurn> _conversation = [];
+    private ReferenceAnalysis? _analysis;
+    private ReferenceInput? _analysisReference;
+    private string _analysisRequestText = "";
+    private string _pendingReferenceRequest = "";
+    private string _analysisSummary = "";
 
     public OperatorViewModel(OperatorServices services)
     {
@@ -115,6 +123,12 @@ public sealed class OperatorViewModel : ObservableObject
         ConnectCommand = Async(ConnectAsync);
         InspectCommand = Async(InspectAsync);
         PreparePlanCommand = Async(PreparePlanAsync);
+        AnalyzeReferenceCommand = Async(() => RunBusyAsync(Ui.T("Status.Analyzing"), async () => { await AnalyzeReferenceAsync(CombinedReferenceRequest(), force: true); }), () => References.Count > 0);
+        References.CollectionChanged += (_, _) =>
+        {
+            ClearAnalysis();
+            RaiseCommandStates();
+        };
         ExecuteCommand = Async(ExecutePlanAsync, () => _plan is not null);
         SaveRecipeCommand = Command(SaveRecipe, () => (_lastSuccessfulPlan ?? _plan) is not null && !string.IsNullOrWhiteSpace(RecipeName));
         ClearPlanCommand = Command(
@@ -174,6 +188,7 @@ public sealed class OperatorViewModel : ObservableObject
     public AsyncRelayCommand ConnectCommand { get; }
     public AsyncRelayCommand InspectCommand { get; }
     public AsyncRelayCommand PreparePlanCommand { get; }
+    public AsyncRelayCommand AnalyzeReferenceCommand { get; }
     public AsyncRelayCommand ExecuteCommand { get; }
     public RelayCommand SaveRecipeCommand { get; }
     public RelayCommand ClearPlanCommand { get; }
@@ -217,6 +232,21 @@ public sealed class OperatorViewModel : ObservableObject
     public string StatusMessage { get => _statusMessage; private set => SetProperty(ref _statusMessage, value); }
     public string Request { get => _request; set => SetProperty(ref _request, value); }
     public string PlanMessage { get => _planMessage; private set => SetProperty(ref _planMessage, value); }
+
+    /// <summary>What the analyzer found in the reference, for review before anything is planned.</summary>
+    public string AnalysisSummary
+    {
+        get => _analysisSummary;
+        private set
+        {
+            if (SetProperty(ref _analysisSummary, value))
+            {
+                OnPropertyChanged(nameof(HasAnalysis));
+            }
+        }
+    }
+
+    public bool HasAnalysis => !string.IsNullOrWhiteSpace(AnalysisSummary);
     public int SelectedTabIndex { get => _selectedTabIndex; set => SetProperty(ref _selectedTabIndex, value); }
     public bool RollbackOnFailure { get => _rollbackOnFailure; set => SetProperty(ref _rollbackOnFailure, value); }
     public string OutputFolder { get => _outputFolder; set => SetProperty(ref _outputFolder, value); }
@@ -504,8 +534,194 @@ public sealed class OperatorViewModel : ObservableObject
         }
     }
 
+    // ---- Reference reconstruction --------------------------------------------------------------
+
+    /// <summary>The request including the part typed before a clarification question was asked.</summary>
+    private string CombinedReferenceRequest() => string.Join("\n", new[] { _pendingReferenceRequest, Request }.Where(text => !string.IsNullOrWhiteSpace(text))).Trim();
+
+    private ReferenceInput? ReferenceToAnalyze => SelectedReference ?? References.FirstOrDefault();
+
+    private bool WantsReconstruction(string request) =>
+        ReferenceToAnalyze is not null &&
+        (_pendingReferenceRequest.Length > 0 || ReconstructionIntent().IsMatch(request.ToLower(Msg.Culture)));
+
+    private void ClearAnalysis()
+    {
+        _analysis = null;
+        _analysisReference = null;
+        _analysisRequestText = "";
+        _pendingReferenceRequest = "";
+        AnalysisSummary = "";
+    }
+
+    /// <summary>Analyses the selected reference. Nothing is uploaded before this is called.</summary>
+    /// <returns>True when a usable analysis is available.</returns>
+    private async Task<bool> AnalyzeReferenceAsync(string request, bool force)
+    {
+        var reference = ReferenceToAnalyze;
+        if (reference is null)
+        {
+            SetPlan(null, Ui.T("Plan.NoReference"));
+            return false;
+        }
+
+        // A size ("500x700 mm") does not change what is on the reference, so it never forces a new analysis.
+        var content = SizeText().Replace(request, " ").Trim();
+        if (!force && _analysis is not null && ReferenceEquals(_analysisReference, reference) && content == _analysisRequestText)
+        {
+            return true;
+        }
+
+        StatusMessage = Ui.F("Status.Busy", Ui.T("Status.Analyzing"));
+        var result = await _services.Vision.AnalyzeAsync(new ReferenceAnalysisRequest { Reference = reference, UserRequest = request });
+        if (result.Diagnostics.TechnicalError is { } technical)
+        {
+            _services.FileLog.Write($"Reference analysis failed ({result.Diagnostics.ErrorKind}): {technical}");
+        }
+
+        if (result.Status == AiPlanningStatus.NeedsClarification)
+        {
+            _pendingReferenceRequest = request;
+            SetPlan(null, Ui.F("Plan.Clarification", result.ClarificationQuestion));
+            AddLog(Ui.F("Log.AiAsks", result.ClarificationQuestion));
+            Request = "";
+            StatusMessage = Ui.T("Status.NeedsAnswer");
+            return false;
+        }
+
+        if (!result.IsReady)
+        {
+            _analysis = null;
+            AnalysisSummary = "";
+            SetPlan(null, result.UserMessage);
+            AddLog(result.UserMessage);
+            StatusMessage = Ui.T("Status.NoPlan");
+            return false;
+        }
+
+        _analysis = result.Analysis;
+        _analysisReference = reference;
+        _analysisRequestText = content;
+        AnalysisSummary = DescribeAnalysis(result.Analysis!, request);
+        AddLog(Ui.F("Log.Analyzed", reference.FileName, result.Analysis!.Elements.Count));
+        StatusMessage = Ui.T("Status.Analyzed");
+        return true;
+    }
+
+    private async Task ReconstructFromReferenceAsync()
+    {
+        var request = CombinedReferenceRequest();
+        if (!await AnalyzeReferenceAsync(request, force: false))
+        {
+            return;
+        }
+
+        var result = _services.Reconstruction.Plan(new ReconstructionRequest
+        {
+            Reference = _analysisReference!,
+            Analysis = _analysis!,
+            UserRequest = request,
+            Assets = _services.Assets.GetAll(),
+        });
+
+        if (result.Status == AiPlanningStatus.NeedsClarification)
+        {
+            // Production information is never guessed: remember the request and wait for the answer.
+            _pendingReferenceRequest = request;
+            SetPlan(null, Ui.F("Plan.Question", result.ClarificationQuestion));
+            AddLog(result.ClarificationQuestion!);
+            Request = "";
+            StatusMessage = Ui.T("Status.NeedsAnswer");
+            return;
+        }
+
+        _pendingReferenceRequest = "";
+        var warnings = _analysis!.Warnings.Concat(result.Warnings).Distinct().ToList();
+        var message = result.UserMessage + (warnings.Count > 0 ? Ui.F("Plan.Warnings", string.Join(" • ", warnings)) : "");
+        SetPlan(result.Plan, message);
+        if (!result.IsReady)
+        {
+            AddLog(result.UserMessage);
+        }
+    }
+
+    private static string DescribeAnalysis(ReferenceAnalysis analysis, string request)
+    {
+        var lines = new List<string> { Ui.F("Analysis.Source", analysis.FileName) };
+        if (analysis.PageCount > 1)
+        {
+            lines.Add(Ui.F("Analysis.Page", analysis.PageNumber, analysis.PageCount));
+        }
+
+        // The size the user wrote wins over the file's own; with neither, it must be asked for.
+        lines.Add(DimensionParser.TryParse(request, out var stated)
+            ? Ui.F("Analysis.SizeFromRequest", $"{Msg.Number(stated.WidthMm)} × {Msg.Number(stated.HeightMm)} mm")
+            : analysis.PhysicalSize is { } size
+                ? Ui.F("Analysis.Size", $"{Msg.Number(size.WidthMm)} × {Msg.Number(size.HeightMm)} mm")
+                : Ui.T("Analysis.SizeNeeded"));
+
+        if (analysis.CanReuseVectorContent)
+        {
+            lines.Add(Ui.T("Analysis.Vector"));
+        }
+        else
+        {
+            lines.Add(Ui.T("Analysis.Detected"));
+            lines.AddRange(analysis.Elements.Where(element => element.Kind != ReferenceElementKind.Group)
+                .GroupBy(element => element.Kind).OrderByDescending(group => group.Count())
+                .Select(group => Ui.F("Analysis.Count", group.Count(), Msg.Get("Vision.Kind." + group.Key))));
+
+            var texts = analysis.Elements.Where(element => element.Kind == ReferenceElementKind.Text).ToList();
+            if (texts.Count > 0)
+            {
+                lines.Add(Ui.T("Analysis.Texts"));
+                lines.AddRange(texts.Select(text => Ui.F("Analysis.TextLine", text.Text!.ReplaceLineEndings(" / "), text.TextUncertain ? Ui.T("Analysis.TextUncertain") : "")));
+            }
+
+            var special = analysis.Elements.Where(element => element.Strategy is ReconstructionStrategy.NeedsUserAsset
+                or ReconstructionStrategy.UnsupportedComplexArtwork or ReconstructionStrategy.ImportImage or ReconstructionStrategy.UseAsset).ToList();
+            if (special.Count > 0)
+            {
+                lines.Add(Ui.T("Analysis.Special"));
+                lines.AddRange(special.Select(element => Ui.F("Analysis.SpecialLine", element.Label ?? Msg.Get("Vision.Kind." + element.Kind), Msg.Get("Vision.Strategy." + element.Strategy))));
+            }
+        }
+
+        if (analysis.Confidence is { } confidence)
+        {
+            lines.Add(Ui.F("Analysis.Confidence", Math.Round(confidence * 100)));
+        }
+
+        if (analysis.AppliedModifications.Count > 0)
+        {
+            lines.Add(Ui.T("Analysis.Modifications"));
+            lines.AddRange(analysis.AppliedModifications.Select(change => Ui.F("Analysis.Line", change)));
+        }
+
+        var notes = analysis.Warnings.Concat(analysis.Notes).ToList();
+        if (notes.Count > 0)
+        {
+            lines.Add(Ui.T("Analysis.Warnings"));
+            lines.AddRange(notes.Select(note => Ui.F("Analysis.Line", note)));
+        }
+
+        return string.Join(Environment.NewLine, lines);
+    }
+
+    [System.Text.RegularExpressions.GeneratedRegex(@"aynısı|aynisi|yeniden\s+(?:çiz|oluştur|yap)|referans(?:taki|ı|i)|bu\s+(?:görsel|jpg|png|pdf|svg|cdr|resim|tabela|levha|tasarım)\w*.*(?:oluştur|çiz|yap)|vektör\w*\s+.*oluştur|editable|recreate|reproduce|redraw")]
+    private static partial System.Text.RegularExpressions.Regex ReconstructionIntent();
+
+    [System.Text.RegularExpressions.GeneratedRegex(@"\d+(?:[.,]\d+)?\s*(?:mm|cm|m)?\s*[x×*]\s*\d+(?:[.,]\d+)?\s*(?:mm|cm|m)?(?![\w])", System.Text.RegularExpressions.RegexOptions.IgnoreCase)]
+    private static partial System.Text.RegularExpressions.Regex SizeText();
+
     private Task PreparePlanAsync() => RunBusyAsync(Ui.T(_services.Planner.IsAiActive && !string.IsNullOrWhiteSpace(Request) ? "Status.AiPlanning" : "Status.Planning"), async () =>
     {
+        if (WantsReconstruction(Request))
+        {
+            await ReconstructFromReferenceAsync();
+            return;
+        }
+
         if (string.IsNullOrWhiteSpace(Request))
         {
             if (References.Count == 0)

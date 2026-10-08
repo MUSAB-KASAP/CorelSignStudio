@@ -649,7 +649,7 @@ public sealed class ReferenceReconstructionTests
         Assert.Equal(["ref_001", "ref_002", "ref_002_bar", "ref_003", "ref_004", "ref_005"], created);
         Assert.DoesNotContain(plan.Actions, action => action is BringToFrontAction or SendToBackAction or DeleteAction or ImportFileAction);
         Assert.False(plan.HasDestructiveActions);
-        Assert.Equal("16 işlem hazırlandı: referans 500 × 700 mm boyutunda yeniden oluşturulacak.", result.UserMessage);
+        Assert.Equal("15 işlem hazırlandı: referans 500 × 700 mm boyutunda yeniden oluşturulacak.", result.UserMessage);
         Assert.Equal(plan.ToJson(), AutomationPlan.FromJson(plan.ToJson()).ToJson());
     }
 
@@ -710,7 +710,12 @@ public sealed class ReferenceReconstructionTests
         var result = Planner.Plan(new ReconstructionRequest { Reference = reference, Analysis = analysis, UserRequest = "Bunun aynısını yap" });
 
         Assert.True(result.IsReady, result.UserMessage);
-        Assert.Equal(["createDocument", "importFile"], result.Plan!.Actions.Select(action => action.TypeName));
+        Assert.Equal(["createDocument", "importFile", "align"], result.Plan!.Actions.Select(action => action.TypeName));
+        Assert.Empty(result.Warnings); // same proportions: nothing to report
+
+        var square = Planner.Plan(new ReconstructionRequest { Reference = reference, Analysis = analysis, UserRequest = "Bunu 600x600 mm yap" });
+        Assert.Contains(square.Warnings, warning => warning.Contains("oranı korunarak sayfaya sığdırıldı"));
+        Assert.Equal((600d, 600d), (((ImportFileAction)square.Plan!.Actions[1]).FitWidthMm, ((ImportFileAction)square.Plan.Actions[1]).FitHeightMm));
         var import = (ImportFileAction)result.Plan.Actions[1];
         Assert.Equal((reference.FilePath, 0d, 0d, 500d, 700d), (import.FilePath, import.XMm, import.YMm, import.FitWidthMm, import.FitHeightMm));
         Assert.DoesNotContain(result.Plan.Actions, action => action is CreateRectangleAction or CreateTextAction);

@@ -70,10 +70,20 @@ public partial class OperatorWindow : Window
 
     private void ScrollLogToEnd(object? sender, NotifyCollectionChangedEventArgs e)
     {
-        if (e.Action == NotifyCollectionChangedAction.Add && LogList.Items.Count > 0)
+        if (e.Action != NotifyCollectionChangedAction.Add)
         {
-            LogList.ScrollIntoView(LogList.Items[^1]);
+            return;
         }
+
+        // Deferred: scrolling inside the change notification can run before the list itself has processed
+        // the change, which WPF reports as an inconsistent ItemsControl.
+        Dispatcher.BeginInvoke(() =>
+        {
+            if (LogList.Items.Count > 0)
+            {
+                LogList.ScrollIntoView(LogList.Items[^1]);
+            }
+        }, System.Windows.Threading.DispatcherPriority.Background);
     }
 }
 

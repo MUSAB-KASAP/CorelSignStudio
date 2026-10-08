@@ -497,6 +497,96 @@ public sealed class CorelOperatorIntegrationTests : IClassFixture<CorelOperatorF
         }
     }
 
+    /// <summary>
+    /// Reference analysis (scripted, no AI call) → reconstruction plan → real CorelDRAW document → CDR and PDF.
+    /// This is the Windows/CorelDRAW half of the reference-vision feature; it cannot run in the cloud.
+    /// </summary>
+    [Fact]
+    [Trait("Category", "CorelIntegration")]
+    public async Task A_reference_analysis_is_rebuilt_as_editable_objects_in_coreldraw()
+    {
+        if (!Enabled)
+        {
+            output.WriteLine("Set COREL_INTEGRATION=1 to run the installed-CorelDRAW reconstruction test.");
+            return;
+        }
+
+        var outputRoot = PrepareOutputFolder("reconstruction");
+        var service = fixture.Service!;
+        var inspector = new CorelDocumentInspector(service);
+        var executor = new CorelActionExecutor(service);
+        var userHadDocumentOpen = await inspector.InspectActiveDocumentAsync() is not null;
+
+        const string Request = "Bunun aynısını 500x700 mm olarak CorelDRAW'da yap.";
+        var elements = ReferenceFixtures.SignElements.TrimEnd().TrimEnd(']') + """
+            ,{"key":"tri","parentKey":"","kind":"polygon","label":"Uyarı üçgeni","bounds":{"x":0.42,"y":0.9,"width":0.16,"height":0.06},"zIndex":9,"points":[[0.5,0.9],[0.58,0.96],[0.42,0.96]],"fillColor":"#FFD400","outlineColor":"#000000","outlineWidthRatio":0.004,"strategy":"nativeShape","confidence":0.9}
+            ,{"key":"logo","parentKey":"","kind":"logo","label":"Firma logosu","bounds":{"x":0.72,"y":0.05,"width":0.2,"height":0.06},"zIndex":10,"strategy":"needsUserAsset","confidence":0.8}]
+            """;
+        var reference = Domain.References.ReferenceInput.FromFile(ReferenceFixtures.ProhibitionSignPng());
+        var analysis = (await ReferenceFixtures.Analyzer(new FakeVisionClient(ReferenceFixtures.Answer(elements)))
+            .AnalyzeAsync(new Domain.Ai.Vision.ReferenceAnalysisRequest { Reference = reference, UserRequest = Request })).Analysis!;
+        var reconstruction = new Domain.References.ReferenceReconstructionPlanner(new Domain.References.InstalledFontResolver(["Arial"]))
+            .Plan(new Domain.References.ReconstructionRequest { Reference = reference, Analysis = analysis, UserRequest = Request });
+        Assert.True(reconstruction.IsReady, reconstruction.UserMessage);
+
+        try
+        {
+            var execution = await Run(executor, reconstruction.Plan!);
+            var document = (await inspector.InspectActiveDocumentAsync())!;
+            output.WriteLine(document.ToText());
+
+            Assert.Equal(500, document.ActivePage!.WidthMm, 1);
+            Assert.Equal(700, document.ActivePage.HeightMm, 1);
+
+            // Editable text objects, with the Turkish letters intact and fitted to the analysed width.
+            var texts = document.AllShapes().Where(shape => shape.IsText).OrderBy(shape => shape.Bounds.YMm).ToList();
+            Assert.Equal(["BU ALANA", "GİRMEK", "YASAKTIR"], texts.Select(text => text.Text));
+            Assert.All(texts, text => Assert.Equal("#D8202A", text.Fill!.ColorHex));
+            Assert.Equal(280, texts[0].Bounds.WidthMm, 0);
+            Assert.Equal(110, texts[0].Bounds.XMm, 0);
+            Assert.Equal(300, texts[2].Bounds.WidthMm, 0);
+            Assert.InRange(texts[0].Bounds.CenterYMm, 415, 432);
+
+            // Native shapes: frame, ring (ellipse), bar and triangle (curves) — nothing is a bitmap.
+            var frame = document.FindShapesByName("Çerçeve (ref_001)").Single();
+            Assert.Equal(ShapeKind.Rectangle, frame.Type);
+            AssertBounds(frame.Bounds, 20, 21, 460, 658);
+            var triangle = document.FindShapesByName("Uyarı üçgeni (ref_007)").Single();
+            Assert.Equal(ShapeKind.Curve, triangle.Type);
+            Assert.Equal("#FFD400", triangle.Fill!.ColorHex);
+            AssertBounds(triangle.Bounds, 210, 630, 80, 42);
+            Assert.DoesNotContain(document.AllShapes(), shape => shape.Type == ShapeKind.Bitmap);
+
+            // The prohibition sign is one editable group of a ring and a bar; the three lines are another.
+            var groups = document.AllShapes().Where(shape => shape.Type == ShapeKind.Group).ToList();
+            var sign = groups.Single(group => group.Name == "Yasak işareti (ref_002)");
+            Assert.Equal([ShapeKind.Ellipse, ShapeKind.Curve], sign.Children.Select(child => child.Type).Order());
+            Assert.Equal(3, groups.Single(group => group.Name == "Yazı bloğu").Children.Count);
+
+            // The logo is an honest, clearly named placeholder.
+            var placeholder = document.FindShapesByName("YER TUTUCU: Firma logosu").Single();
+            Assert.Equal(ShapeKind.Rectangle, placeholder.Type);
+            Assert.Equal("#FF00FF", placeholder.Outline!.ColorHex);
+
+            var files = await Run(executor, new AutomationPlan
+            {
+                Name = "Outputs",
+                Actions =
+                [
+                    new SaveDocumentAction { Id = "cdr", FilePath = Path.Combine(outputRoot, "yeniden-olusturma.cdr") },
+                    new ExportPdfAction { Id = "pdf", FilePath = Path.Combine(outputRoot, "yeniden-olusturma.pdf") },
+                    new ExportPngAction { Id = "png", FilePath = Path.Combine(outputRoot, "yeniden-olusturma.png"), Dpi = 72 },
+                ],
+            });
+            Assert.All(files.ProducedFiles, file => Assert.True(new FileInfo(file).Length > 0, file));
+            Assert.Equal(reconstruction.Plan!.Actions.Count, execution.CompletedActionIds.Count);
+        }
+        finally
+        {
+            await CloseTestDocuments(inspector, executor, userHadDocumentOpen);
+        }
+    }
+
     private async Task<PlanExecutionResult> Run(CorelActionExecutor executor, AutomationPlan plan)
     {
         var result = await executor.ExecuteAsync(plan);
