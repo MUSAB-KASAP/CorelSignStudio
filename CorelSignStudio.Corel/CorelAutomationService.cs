@@ -285,7 +285,7 @@ public sealed class CorelAutomationService : ICorelAutomationService
             {
                 RectangleElement rectangle => layer.CreateRectangle2(
                     rectangle.XMm,
-                    ToCorelY(pageHeightMm, rectangle.YMm),
+                    ToCorelY(pageHeightMm, rectangle.YMm + rectangle.HeightMm),
                     rectangle.WidthMm,
                     rectangle.HeightMm,
                     rectangle.CornerRadiusMm,
@@ -341,14 +341,20 @@ public sealed class CorelAutomationService : ICorelAutomationService
 
         var sourcePath = _assetResolver.ResolveAssetPath(assetKey);
         object? importFilter = null;
+        object? importOptions = null;
         try
         {
-            importFilter = layer.Import(sourcePath);
+            var signature = ComDispatchInspector.GetMethodSignature((object)layer, "ImportEx");
+            WriteLog($"Runtime ImportEx signature: {signature}.");
+            dynamic application = _application!;
+            importOptions = application.CreateStructImportOptions();
+            importFilter = layer.ImportEx(sourcePath, 0, importOptions);
             ((dynamic)importFilter).Finish();
         }
         finally
         {
             ReleaseComObject(importFilter);
+            ReleaseComObject(importOptions);
         }
 
         dynamic shape = document.ActiveShape;

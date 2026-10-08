@@ -2,6 +2,8 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using CorelSignStudio.Corel;
 using CorelSignStudio.Domain;
+using CorelSignStudio.Storage;
+using CorelSignStudio.Templates;
 using Xunit.Abstractions;
 
 namespace CorelSignStudio.Tests;
@@ -22,12 +24,14 @@ public sealed class CorelDrawIntegrationTests(ITestOutputHelper output)
             ?? Path.Combine(AppContext.BaseDirectory, "corel-smoke");
         Directory.CreateDirectory(outputRoot);
 
-        var cdrPath = Path.Combine(outputRoot, "CorelConnectionSmoke.cdr");
-        var pdfPath = Path.Combine(outputRoot, "CorelConnectionSmoke.pdf");
+        var cdrPath = Path.Combine(outputRoot, "BU_ALANA_GIRMEK_YASAKTIR_500x700.cdr");
+        var pdfPath = Path.Combine(outputRoot, "BU_ALANA_GIRMEK_YASAKTIR_500x700.pdf");
         var reportPath = Path.Combine(outputRoot, "CorelConnectionSmoke.json");
         var logLines = new List<string>();
 
-        await using var service = new CorelAutomationService(log: message =>
+        var solutionRoot = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", ".."));
+        var assets = new FileSystemAssetCatalog(Path.Combine(solutionRoot, "assets", "icons"));
+        await using var service = new CorelAutomationService(assets, message =>
         {
             logLines.Add(message);
             output.WriteLine(message);
@@ -37,30 +41,20 @@ public sealed class CorelDrawIntegrationTests(ITestOutputHelper output)
         Assert.Equal(ApartmentState.STA, connection.ApartmentState);
         Assert.Equal(CorelAutomationService.DefaultProgId, connection.ProgId);
 
-        await service.RenderDesignAsync(new DesignSpec
-        {
-            WidthMm = 500,
-            HeightMm = 700,
-            Elements =
-            [
-                new RectangleElement
-                {
-                    Id = "smoke-border",
-                    XMm = 10,
-                    YMm = 10,
-                    WidthMm = 480,
-                    HeightMm = 680,
-                },
-            ],
-        });
+        var design = new ProhibitionSignTemplate().CreateDesign(
+            new SignTemplateParameters(500, 700, "BU ALANA", "GİRMEK", "YASAKTIR", "no-entry-hand"));
+        await service.RenderDesignAsync(design);
 
         var saveResult = await service.SaveCdrAsync(cdrPath);
         await service.ExportPdfAsync(pdfPath);
+        var reopened = await service.OpenCdrAsync(cdrPath);
         await service.CloseAsync();
 
         Assert.True(new FileInfo(cdrPath).Length > 0);
         Assert.True(new FileInfo(pdfPath).Length > 0);
         Assert.Contains("SaveAs", saveResult.RuntimeSignature, StringComparison.Ordinal);
+        Assert.Equal(500, reopened.WidthMm, 1);
+        Assert.Equal(700, reopened.HeightMm, 1);
 
         var report = new
         {

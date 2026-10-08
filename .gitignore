@@ -4,6 +4,8 @@
 **/bin/
 **/obj/
 artifacts/
+logs/
+output/
 TestResults/
 *.user
 *.suo
