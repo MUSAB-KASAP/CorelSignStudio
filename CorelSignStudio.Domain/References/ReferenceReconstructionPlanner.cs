@@ -6,20 +6,33 @@ using CorelSignStudio.Domain.Localization;
 
 namespace CorelSignStudio.Domain.References;
 
-public sealed record FontResolution(string FontFamily, FontMatchKind Match);
+/// <param name="FontFamily">The font to use.</param>
+/// <param name="Match">How good the match is.</param>
+/// <param name="MissingGlyphs">True when the preferred font was rejected because it cannot draw the text.</param>
+public sealed record FontResolution(string FontFamily, FontMatchKind Match, bool MissingGlyphs = false);
 
 /// <summary>Turns a font guess into a font that can actually be used, and says how good the match is.</summary>
 public interface IFontResolver
 {
-    FontResolution Resolve(string? fontFamilyGuess, double? confidence);
+    /// <param name="fontFamilyGuess">What the analysis thinks the font is.</param>
+    /// <param name="confidence">How sure the analysis is, 0..1.</param>
+    /// <param name="text">The text to be set; the chosen font must be able to draw every character of it.</param>
+    FontResolution Resolve(string? fontFamilyGuess, double? confidence, string? text = null);
 }
 
 /// <summary>
 /// Resolves against the fonts installed on this computer. "Exact" is claimed only for an installed font
 /// the analysis was confident about; a known look-alike is "Likely"; everything else falls back.
 /// </summary>
-public sealed class InstalledFontResolver(IEnumerable<string>? installedFonts = null, string fallbackFont = "Arial") : IFontResolver
+public sealed class InstalledFontResolver(
+    IEnumerable<string>? installedFonts = null,
+    string fallbackFont = "Arial",
+    Func<string, string, bool>? supportsText = null) : IFontResolver
 {
+    /// <summary>Fonts tried, in order, when the preferred one cannot draw the text.</summary>
+    private static readonly string[] ArabicCapable = ["Segoe UI", "Arial", "Tahoma", "Traditional Arabic", "Arabic Typesetting", "Sakkal Majalla", "Simplified Arabic", "Times New Roman"];
+    private static readonly string[] LatinCapable = ["Arial", "Segoe UI", "Tahoma", "Verdana", "Calibri", "Times New Roman"];
+
     public const double ExactConfidenceThreshold = 0.8;
 
     private static readonly IReadOnlyDictionary<string, string[]> Alternatives = new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase)
@@ -38,7 +51,23 @@ public sealed class InstalledFontResolver(IEnumerable<string>? installedFonts = 
         .GroupBy(font => font, StringComparer.OrdinalIgnoreCase)
         .ToDictionary(group => group.Key, group => group.First(), StringComparer.OrdinalIgnoreCase);
 
-    public FontResolution Resolve(string? fontFamilyGuess, double? confidence)
+    public FontResolution Resolve(string? fontFamilyGuess, double? confidence, string? text = null)
+    {
+        var chosen = ResolveByName(fontFamilyGuess, confidence);
+        if (string.IsNullOrWhiteSpace(text) || supportsText is null || supportsText(chosen.FontFamily, text))
+        {
+            return chosen;
+        }
+
+        // The font exists but lacks characters this text needs (Arabic, or Turkish ğ ş ı İ): pick one that has them.
+        var candidates = ContainsArabic(text) ? ArabicCapable : LatinCapable;
+        var capable = candidates.Select(Installed).FirstOrDefault(font => font is not null && supportsText(font, text));
+        return new FontResolution(capable ?? chosen.FontFamily, FontMatchKind.Fallback, MissingGlyphs: true);
+    }
+
+    public static bool ContainsArabic(string text) => text.Any(character => character is >= '\u0600' and <= '\u06FF' or >= '\u0750' and <= '\u077F' or >= '\uFB50' and <= '\uFDFF' or >= '\uFE70' and <= '\uFEFF');
+
+    private FontResolution ResolveByName(string? fontFamilyGuess, double? confidence)
     {
         var guess = fontFamilyGuess?.Trim();
         if (string.IsNullOrEmpty(guess))
@@ -254,7 +283,8 @@ public sealed class ReferenceReconstructionPlanner(IFontResolver? fontResolver =
 
             switch (element.Strategy)
             {
-                case ReconstructionStrategy.UseAsset when FindAsset(element) is { } asset:
+                // A real file from the user's library always beats a placeholder — also for logos.
+                case ReconstructionStrategy.UseAsset or ReconstructionStrategy.NeedsUserAsset when FindAsset(element) is { } asset:
                     Actions.Add(new ImportFileAction { Id = element.Id, FilePath = asset.FilePath, Name = name, XMm = x, YMm = y, FitWidthMm = width, FitHeightMm = height });
                     Warnings.Add(Msg.Format("Reconstruct.Warning.AssetUsed", element.Id, Label(element), asset.Name));
                     break;
@@ -402,14 +432,14 @@ public sealed class ReferenceReconstructionPlanner(IFontResolver? fontResolver =
         {
             var text = element.Text!.Replace("\r\n", "\n", StringComparison.Ordinal);
             var lines = Math.Max(1, text.Split('\n').Length);
-            var font = fonts.Resolve(element.FontFamilyGuess, element.FontConfidence);
+            var font = fonts.Resolve(element.FontFamilyGuess, element.FontConfidence, text);
             if (font.Match == FontMatchKind.Likely)
             {
                 Warnings.Add(Msg.Format("Reconstruct.Warning.FontLikely", element.Id, font.FontFamily));
             }
             else if (font.Match == FontMatchKind.Fallback)
             {
-                Warnings.Add(Msg.Format("Reconstruct.Warning.FontFallback", element.Id, font.FontFamily));
+                Warnings.Add(Msg.Format(font.MissingGlyphs ? "Reconstruct.Warning.FontGlyphs" : "Reconstruct.Warning.FontFallback", element.Id, font.FontFamily));
             }
 
             // First estimate of the size from the box height; the resize below then fits the width exactly,
@@ -458,19 +488,7 @@ public sealed class ReferenceReconstructionPlanner(IFontResolver? fontResolver =
 
         private string LastCreator(int from) => Actions.Skip(from).Last(action => action.CreatesObjects).Id;
 
-        private Asset? FindAsset(ReferenceElement element)
-        {
-            var words = $"{element.AssetHint} {element.Label}".Split([' ', ',', ';'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-                .Where(word => word.Length >= 3).ToArray();
-            return words.Length == 0
-                ? null
-                : request.Assets
-                    .Select(asset => (asset, score: words.Count(word => asset.Matches(new AssetQuery { Text = word }))))
-                    .Where(entry => entry.score > 0)
-                    .OrderByDescending(entry => entry.score)
-                    .Select(entry => entry.asset)
-                    .FirstOrDefault();
-        }
+        private Asset? FindAsset(ReferenceElement element) => AssetMatcher.FindBest(request.Assets, element.AssetHint, element.Label)?.Asset;
 
         private static string Label(ReferenceElement element) => string.IsNullOrWhiteSpace(element.Label) ? Msg.Get("Vision.Kind." + element.Kind) : element.Label;
 

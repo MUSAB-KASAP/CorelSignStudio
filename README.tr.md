@@ -1,4 +1,4 @@
-# Corel AI Operatörü (Corel Sign Studio)
+# Corel AI Operatörü (Corel Sign Studio) — Sürüm 1.0
 
 *English: [README.md](README.md)*
 
@@ -125,7 +125,30 @@ Başka dosya gönderilmez; görsel içeriği günlüklere yazılmaz.
 
 Sınırlar: fotoğraflar ve karmaşık illüstrasyonlar kusursuz vektöre çevrilemez. Bu özellik tabela, levha,
 etiket, tablo, afiş gibi düzenli tasarımlar içindir. Yazı tipleri yaklaşık eşleştirilir ve bu açıkça belirtilir.
-Sonucun referansla otomatik karşılaştırılıp düzeltilmesi henüz yoktur.
+
+## Referansla karşılaştırma ve otomatik iyileştirme
+
+Tasarım CorelDRAW'da oluşturulduktan sonra:
+
+- **Referansla Karşılaştır** — belgedeki nesneler, analizde olması gerekenle ölçülerek karşılaştırılır: var mı,
+  konumu, genişliği/yüksekliği, metni, dolgu ve çizgi rengi, sayfa ölçüsü. Sonuç bir **benzerlik yüzdesi** ve
+  farklar listesi olarak gösterilir ("Satır 3 yaklaşık 20 mm aşağıda", "Yasak işareti yaklaşık %10 büyük").
+  Yapay zekâ yapılandırılmışsa referans görseli ile sayfanın tam görüntüsü ayrıca karşılaştırılır; bu gözle
+  görülen farklar bilgi olarak eklenir.
+- **Otomatik İyileştir** — ölçülen farklar düzeltilir: boyut, konum, metin, renk. En fazla **3 geçiş** yapılır;
+  hedef benzerliğe ulaşılınca, düzeltilecek güvenli bir şey kalmayınca veya bir geçiş işe yaramayınca durur.
+  Her geçiş CorelDRAW'da tek bir Ctrl+Z adımıdır. Hiçbir zaman nesne silinmez; eksik bir nesne uydurulmaz,
+  bildirilir.
+- **İptal** — uzun süren analiz, karşılaştırma, iyileştirme ve toplu işler iptal edilebilir.
+
+## Üretim kontrolü
+
+Dosyaları yazmadan önce **Üretim Kontrolü**'ne basın. Kontrol edilenler: sayfa ölçüsü, sayfadan taşan nesne ve
+metinler, sıfır boyutlu nesneler, yüklü olmayan yazı tipleri, hâlâ duran yer tutucular, net okunamamış
+metinler, eksik kaynak dosyalar, yazılamayan veya çakışan çıktı yolları, üzerine yazılacak dosyalar.
+
+- **Hata** olan iş üretime uygun değildir (örneğin logo yerine hâlâ yer tutucu var).
+- **Uyarı**lar gözden geçirilip kabul edilebilir (örneğin yazı tipi yaklaşık eşleştirildi).
 
 ## Otomasyonlar (reçeteler)
 
@@ -142,11 +165,16 @@ türüne bağlı değildir: etiket, tablo, kartvizit, afiş, seri numaralı işl
 ## Toplu işler
 
 1. Bir otomasyon seçin.
-2. İlk satırında değişken adları olan bir CSV dosyası seçin (Excel'in `;` ile kaydettiği dosyalar da okunur).
+2. Veri dosyasını seçin: **CSV** veya **Excel (.xlsx)**. İlk satırda değişken adları bulunur. Excel dosyasında
+   birden fazla sayfa varsa **Çalışma Sayfası** listesinden seçin. Excel'in kurulu olması gerekmez; hücreler
+   Excel'de göründüğü gibi okunur (001 gibi baştaki sıfırlar korunur).
 3. Çıktı türlerini (CDR, PDF, PNG, SVG) ve isterseniz çıktı adı şablonunu (`{{KISI_ADI}}_{{ROW}}`) belirleyin.
 4. **Önizle** ile satırları kontrol edin, **TOPLU İŞLEMİ BAŞLAT** ile çalıştırın.
 
 Var olan dosyaların üzerine yazılmaz; aynı ada sahip ikinci çıktı `_002` ekiyle kaydedilir.
+
+Otomasyon değerlerinde basit hesap yapılabilir: `{{GENISLIK_MM / 2}}`, `{{YUKSEKLIK_MM - 2 * KENAR}}`.
+Yalnızca sayılar, değişkenler, `+ - * /` ve parantez kullanılabilir.
 
 ## CorelDRAW bağlantısı ve güvenlik
 
@@ -177,15 +205,34 @@ dotnet run --project CorelSignStudio.App
 
 ## Bilinen sınırlamalar
 
-- Yerleşik planlayıcı yalnızca belirli test komutlarını anlar; serbest cümleler için yapay zekâ planlayıcısı (API anahtarı) gerekir.
-- Yapay zekâ planlayıcısı görsel içeriği göremez: referans dosyalarının yalnızca adı ve türü iletilir.
-- JPG/PNG referanslar yalnızca görsel olarak içe aktarılır; düzenlenebilir vektöre çevirme henüz yoktur.
+Sürüm 1.0; trafik, uyarı ve iş yeri levhaları, etiketler, isimlikler, tablolar, sade afiş ve ilanlar, seri
+numaralı işler gibi **düzenli üretim tasarımları** için güçlüdür.
+
+- Her görseli kusursuz vektöre çeviren bir araç değildir. Fotoğraf, resim, ayrıntılı illüstrasyon ve sanatsal
+  logolar temiz vektöre dönüştürülmez; varlık kütüphanesinden kaynak dosya, kesilmiş görsel veya yer tutucu kullanılır.
+- Serbest cümleler ve görsel analizi için yapay zekâ sağlayıcısının API anahtarı gerekir. Anahtar yoksa yalnızca
+  yerleşik planlayıcının komut kalıpları çalışır ve JPG/PNG referanslar analiz edilemez.
+- Otomatik iyileştirme yalnızca ölçülebilen farkları düzeltir (konum, boyut, metin, renk). Yapay zekânın yalnızca
+  "gördüğü" farklar bildirilir, kendiliğinden düzeltilmez.
+- Döndürme açısı ve yazı kalınlığı karşılaştırılmaz. Yazı tipleri yaklaşık eşleştirilir ve bu belirtilir.
+- Arapça gibi sağdan sola metinler yazıldığı gibi oluşturulur; CorelDRAW'da kontrol edilmesi istenir.
+- Birleştirilmiş tablo hücreleri yalnızca bildirilir. Ok uçları çizilmez.
+- Çok sayfalı PDF'de seçilen sayfa görüntüsünden yeniden çizilir; özgün vektörleri kullanılmaz.
 - Düzenlemeler etkin sayfada yapılır.
-- PNG çıktısı sayfanın tamamını değil, sayfadaki çizimin kapladığı alanı içerir.
-- Otomasyon değişkenleri formül içeremez; uyum sağlaması gereken yerleşimler için hizalama/dağıtma kullanın.
-- Toplu iş verisi için yalnızca CSV desteklenir; Excel daha sonra eklenecektir.
+- Üretim kontrolü görsellerin çözünürlüğünü (DPI) denetlemez.
+- Toplu iş verisi `.csv` ve `.xlsx` olabilir; eski `.xls` biçimi desteklenmez.
 - Dil, uygulama açılırken belirlenir; çalışırken değiştirilemez.
 - Doğrulama mesajlarında alan adları (`WidthMm` gibi) teknik adlarıyla geçer.
 - CorelDRAW meşgulse veya bir iletişim kutusu açıksa otomasyon o kutu kapatılana kadar bekler. CorelDRAW
   **deneme sürümünde** gizli örnekler deneme pencerelerine takılabilir; bu yüzden uygulama her zaman görünür
   bir CorelDRAW ile çalışır.
+
+## Kurulum ve sürüm
+
+- Sürüm numarası **1.0.0**; Ayarlar > Hakkında bölümünde görünür.
+- `build\publish.ps1` yayınlanabilir Windows klasörünü `artifacts\release\CorelAI-Operator` altına üretir
+  (.NET kurulumu gerektirmez). CorelDRAW 2026 ayrıca kurulu olmalıdır.
+- `build\installer.iss` bu klasörden kurulum dosyası üreten Inno Setup betiğidir (Inno Setup 6 gerekir).
+- Kurulu uygulama verilerini `%LOCALAPPDATA%\CorelSignStudio` altında, çıktıları `Belgeler\Corel AI Operatörü`
+  altında tutar. API anahtarı ve kişisel ayarlar yayın paketine dahil değildir.
+

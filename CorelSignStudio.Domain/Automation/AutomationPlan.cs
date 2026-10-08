@@ -137,15 +137,18 @@ public sealed record PlanValidationResult(IReadOnlyList<PlanValidationError> Err
 
 public static partial class PlaceholderSyntax
 {
+    /// <summary>Every variable name used by placeholders in <paramref name="text"/>, including inside expressions.</summary>
     public static IReadOnlyList<string> FindAll(string text) =>
-        Pattern().Matches(text).Select(match => match.Groups[1].Value).Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
+        Pattern().Matches(text).SelectMany(match => Recipes.PlaceholderExpression.Variables(match.Groups[1].Value))
+            .Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
 
     public static string Format(string variableName) => "{{" + variableName + "}}";
 
-    [GeneratedRegex(@"\{\{\s*([A-Za-z_][A-Za-z0-9_]*)\s*\}\}")]
+    // The content is a variable name or a small arithmetic expression over names and numbers.
+    [GeneratedRegex(@"\{\{\s*([A-Za-z0-9_+\-*/(). ,]+?)\s*\}\}")]
     public static partial Regex Pattern();
 
-    [GeneratedRegex(@"^\{\{\s*([A-Za-z_][A-Za-z0-9_]*)\s*\}\}$")]
+    [GeneratedRegex(@"^\{\{\s*([A-Za-z0-9_+\-*/(). ,]+?)\s*\}\}$")]
     public static partial Regex WholeValuePattern();
 }
 

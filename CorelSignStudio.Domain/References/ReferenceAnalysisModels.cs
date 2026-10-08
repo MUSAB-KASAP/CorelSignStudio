@@ -48,6 +48,9 @@ public static partial class DimensionParser
         return size.IsValid;
     }
 
+    /// <summary>The text with any size removed; two requests that differ only in size ask for the same content.</summary>
+    public static string RemoveSizes(string? text) => string.IsNullOrWhiteSpace(text) ? "" : string.Join(' ', Pattern().Replace(text, " ").Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
+
     private static double UnitFactor(string unit) => unit.ToLowerInvariant() switch { "cm" => 10d, "m" => 1000d, _ => 1d };
 
     private static double Number(string value) => double.Parse(value.Replace(',', '.'), NumberStyles.Float, CultureInfo.InvariantCulture);
@@ -316,26 +319,4 @@ public interface IReferenceImageCropper
 {
     /// <returns>Path of the cropped image, or <c>null</c> when the reference cannot be cropped.</returns>
     string? Crop(ReferenceInput reference, NormalizedBounds bounds, string elementId);
-}
-
-// ---- Next milestone: compare the CorelDRAW result with the reference and correct it -----------------
-
-public sealed record CorrectionSuggestion(string? ElementId, string? ShapeId, string Description, double Severity);
-
-public sealed record VisualComparisonResult
-{
-    /// <summary>0..1; 1 means visually identical.</summary>
-    public double Similarity { get; init; }
-
-    public IReadOnlyList<CorrectionSuggestion> Suggestions { get; init; } = [];
-    public IReadOnlyList<string> Notes { get; init; } = [];
-}
-
-/// <summary>
-/// Extension point for the revision loop: reference preview + preview of the CorelDRAW output →
-/// differences → a correction plan. Not implemented in this milestone.
-/// </summary>
-public interface IVisualComparisonService
-{
-    Task<VisualComparisonResult> CompareAsync(ReferencePreview reference, ReferencePreview output, ReferenceAnalysis analysis, CancellationToken cancellationToken = default);
 }

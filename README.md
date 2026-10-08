@@ -1,4 +1,4 @@
-# Corel AI Operator (Corel Sign Studio)
+# Corel AI Operator (Corel Sign Studio) — v1.0
 
 *Türkçe: [README.tr.md](README.tr.md)*
 
@@ -8,6 +8,7 @@ operations for review, executes it, and can replay successful jobs as recipes an
 
 It is a general automation platform — not a sign designer and not tied to any page size, company or
 kind of job. Requests are planned by an AI planner when an API key is configured, and by a small deterministic planner otherwise.
+Reference images can be analysed and rebuilt as editable objects, compared with the result and corrected automatically.
 
 ```
 User request ─► ICommandPlanner ─► AutomationPlan ─► ICorelActionExecutor ─► CorelDRAW
@@ -92,12 +93,57 @@ ReferenceInput -> IReferencePreviewRenderer -> AiReferenceAnalyzer -> ReferenceA
   reference's downscaled preview, to the configured provider. Image bytes are never logged — only file name,
   MIME type, pixel size and byte count.
 - **Provider neutrality.** `AiRequest.Images` / `IAiClient.SupportsImages`; the Anthropic client is the first
-  implementation. `IVisualComparisonService` is defined for the next milestone (compare output with reference).
+  implementation.
 - **Validation.** Unit tests use a scripted client and synthetic fixtures drawn by the tests. The opt-in
   CorelDRAW test rebuilds a sign in the real application and saves CDR/PDF; that part cannot run in the cloud.
 - **Limits.** Not a general vector tracer: photographs and complex illustrations are not converted. Fonts are
   matched approximately (exact / likely / fallback is reported). Right-to-left text is created as written and
-  flagged for checking. Merged table cells are reported, not reproduced. No automatic visual comparison yet.
+  flagged for checking. Merged table cells are reported, not reproduced.
+
+## Visual comparison, automatic correction and preflight
+
+```
+ReferenceAnalysis -> reconstruction plan -> ExpectedObjects
+DocumentSnapshot + ExpectedObjects -> StructuralComparer  --\
+reference image + full-page output image -> AiVisualComparer --> VisualComparisonResult
+VisualComparisonResult -> VisualCorrectionPlanner -> AutomationPlan -> executor   (at most 3 passes)
+```
+
+- **Comparison** is hybrid. The measured part compares every object the reconstruction created with the
+  inspected document: presence, centre position, width/height, text, fill and outline colour, page size. When an
+  AI provider is configured, the reference and a full-page picture of the result are also shown to the vision
+  model, whose findings are added as advisory differences.
+- **Full-page preview** uses CorelDRAW's own export area (`StructExportOptions.ExportArea = Page.BoundingBox`),
+  so the whole page with a white background is rendered and the document is not modified.
+- **Correction** is deterministic: resize to the expected size, move by the measured offset, set the expected
+  text or colour. Every correction is an existing typed action; nothing destructive is ever generated, and a
+  missing object is reported rather than improvised.
+- **The improvement loop** is bounded (3 passes by default) and stops when the target similarity is reached,
+  nothing safe is left, a pass does not help, the executor fails, or the user cancels. Each pass is one undo step.
+- **Preflight** (`DesignPreflightService`) checks page size, objects outside the page, zero-size shapes, missing
+  fonts, unresolved placeholders, uncertain OCR text, missing input files, duplicate or unwritable outputs and
+  files that would be overwritten. Errors block production; warnings can be accepted.
+
+## Batch data and recipe formulas
+
+- `IBatchDataReader` has two implementations: CSV and Excel `.xlsx` (ClosedXML, MIT — no Excel installation, no
+  COM). A worksheet can be chosen; cells are read as displayed, so leading zeros survive.
+- Placeholders may contain arithmetic over numeric variables: `{{WIDTH_MM / 2}}`, `{{HEIGHT_MM - 2 * MARGIN}}`.
+  It is a calculator (numbers, variables, `+ - * /`, parentheses) — there are no functions and nothing can be executed.
+
+## Release
+
+Version **1.0.0** is set once in `Directory.Build.props`.
+
+```
+powershell -ExecutionPolicy Bypass -File build\publish.ps1     # -> artifacts\release\CorelAI-Operator
+```
+
+The publish is a self-contained win-x64 build (no .NET installation needed). CorelDRAW 2026 is a prerequisite and
+is not bundled. `build\installer.iss` is an Inno Setup 6 script that turns the publish folder into a per-user
+installer with Start Menu and optional Desktop shortcuts; it needs the Inno Setup compiler (`ISCC.exe`).
+A published copy keeps its data, settings and logs under `%LOCALAPPDATA%\CorelSignStudio` and writes output to
+`Documents\Corel AI Operatörü`. No API key, user setting or test output is part of the release.
 
 ## Language
 
@@ -122,13 +168,27 @@ dotnet run --project CorelSignStudio.App
 
 ## Known limitations
 
-- The built-in planner understands only a short list of test commands (shown in the Operator tab).
-- Bitmap references (JPG/PNG) are only imported as a backdrop; recreating them as vectors needs the future AI analyzer.
-- Coordinates are relative to the active page; multi-page documents are inspected fully but edited on the active page.
-- PNG export covers the artwork's bounding box on the active page, not the full page rectangle.
-- Recipe variables replace values; they cannot yet express formulas (for example "centre = width / 2") —
-  use align/distribute actions for layout that must adapt.
-- CSV is supported for batch data; Excel is a future reader producing the same `BatchRow` list.
-- A CorelDRAW instance that is busy or showing a dialog blocks automation until the dialog is closed. With the
-  CorelDRAW **trial**, hidden automation instances can be blocked by trial pop-ups and do not exit after `Quit()`;
-  the operator window therefore always works with a visible CorelDRAW and never closes it.
+Version 1.0 is built for structured production designs: traffic, warning and workplace signs, labels, name
+plates, tables, simple posters and advertisements, serial-number jobs and other repeatable layouts.
+
+- It is not a vector tracer. Photographs, paintings, detailed illustrations and highly artistic logos are not
+  converted to clean vectors; they need a source file from the asset library, a bitmap crop, or a placeholder.
+- Reference analysis and free-form requests need an API key for the configured AI provider. Without one, only
+  the built-in planner's fixed command patterns are understood and bitmap references cannot be analysed.
+- The automatic correction loop fixes what can be measured — position, size, text, fill and outline colour of
+  the objects a reconstruction created. Differences a vision model merely sees are reported, not auto-corrected.
+- Rotation and font weight are not compared. Fonts are matched approximately and reported as exact, likely or
+  fallback.
+- Right-to-left text is created as written and flagged for checking in CorelDRAW.
+- Merged table cells are reported, not reproduced. Arrow heads are not drawn.
+- A chosen page of a multi-page PDF is redrawn from its picture; its original vectors are not reused.
+- Edits apply to the active page of the document.
+- Recipe placeholders support `+ - * /` and parentheses over numeric variables — nothing else, by design.
+- Preflight reports what the inspected document shows. Bitmap resolution is not checked, because the document
+  snapshot does not carry pixel dimensions.
+- Batch data is read from `.csv` and `.xlsx`. The older binary `.xls` format is not supported.
+- A CorelDRAW that is busy or showing a dialog blocks automation until the dialog is closed. With the CorelDRAW
+  **trial**, hidden automation instances can be blocked by trial pop-ups and do not exit after `Quit()`; the
+  operator therefore always works with a visible CorelDRAW and never closes it.
+- The interface language is chosen at start-up (Turkish by default) and cannot be switched while running.
+

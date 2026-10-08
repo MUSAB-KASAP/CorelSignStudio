@@ -291,4 +291,49 @@
   <data name="Vision.Strategy.NeedsUserAsset" xml:space="preserve"><value>kaynak dosya gerekli</value></data>
   <data name="Vision.Strategy.UnsupportedComplexArtwork" xml:space="preserve"><value>karmaşık görsel öğe</value></data>
   <data name="Reconstruct.Warning.AspectKept" xml:space="preserve"><value>İstenen ölçünün en-boy oranı ({0}) referansınkinden ({1}) farklı; vektör içerik oranı korunarak sayfaya sığdırıldı ve ortalandı.</value></data>
+  <data name="Recipe.ExpressionError" xml:space="preserve"><value>“{0}” hesaplanamadı: {1}</value></data>
+  <data name="Reconstruct.Warning.FontGlyphs" xml:space="preserve"><value>{0}: seçilen yazı tipi bu metindeki harfleri içermiyor; {1} kullanıldı.</value></data>
+  <data name="Compare.PageSize" xml:space="preserve"><value>Sayfa ölçüsü {0} × {1} mm, olması gereken {2} × {3} mm.</value></data>
+  <data name="Compare.Ok.PageSize" xml:space="preserve"><value>Sayfa ölçüsü doğru ({0} × {1} mm)</value></data>
+  <data name="Compare.Ok.Object" xml:space="preserve"><value>{0} doğru</value></data>
+  <data name="Compare.Missing" xml:space="preserve"><value>{0} belgede bulunamadı.</value></data>
+  <data name="Compare.Position" xml:space="preserve"><value>{0} yaklaşık {1}.</value></data>
+  <data name="Compare.Offset.Right" xml:space="preserve"><value>{0} mm sağda</value></data>
+  <data name="Compare.Offset.Left" xml:space="preserve"><value>{0} mm solda</value></data>
+  <data name="Compare.Offset.Down" xml:space="preserve"><value>{0} mm aşağıda</value></data>
+  <data name="Compare.Offset.Up" xml:space="preserve"><value>{0} mm yukarıda</value></data>
+  <data name="Compare.TooLarge" xml:space="preserve"><value>{0} yaklaşık %{1} büyük.</value></data>
+  <data name="Compare.TooSmall" xml:space="preserve"><value>{0} yaklaşık %{1} küçük.</value></data>
+  <data name="Compare.Text" xml:space="preserve"><value>{0} metni “{1}”, olması gereken “{2}”.</value></data>
+  <data name="Compare.Fill" xml:space="preserve"><value>{0} dolgu rengi {1}, olması gereken {2}.</value></data>
+  <data name="Compare.Outline" xml:space="preserve"><value>{0} çizgi rengi {1}, olması gereken {2}.</value></data>
+  <data name="Compare.Unexpected" xml:space="preserve"><value>Belgede referansta karşılığı olmayan {0} nesne var.</value></data>
+  <data name="Compare.Note.VisualUnavailable" xml:space="preserve"><value>Görsel karşılaştırma yapılamadı; yalnızca ölçülere göre karşılaştırıldı.</value></data>
+  <data name="Correct.PlanName" xml:space="preserve"><value>Referansa göre düzelt</value></data>
+  <data name="Correct.PlanDescription" xml:space="preserve"><value>Ölçülen farklara göre {0} düzeltme.</value></data>
+  <data name="Improve.Stop.TargetReached" xml:space="preserve"><value>Hedef benzerliğe ulaşıldı.</value></data>
+  <data name="Improve.Stop.NoSafeCorrections" xml:space="preserve"><value>Otomatik düzeltilebilecek fark kalmadı.</value></data>
+  <data name="Improve.Stop.NoImprovement" xml:space="preserve"><value>Son geçiş kayda değer bir iyileşme sağlamadı; durduruldu.</value></data>
+  <data name="Improve.Stop.MaxPassesReached" xml:space="preserve"><value>En fazla geçiş sayısına ulaşıldı.</value></data>
+  <data name="Improve.Stop.ExecutionFailed" xml:space="preserve"><value>Bir düzeltme uygulanamadı; o geçişteki değişiklikler geri alındı.</value></data>
+  <data name="Improve.Stop.Cancelled" xml:space="preserve"><value>İşlem iptal edildi.</value></data>
+  <data name="Improve.Stop.NoDocument" xml:space="preserve"><value>CorelDRAW'da açık bir belge bulunamadı.</value></data>
+  <data name="Preflight.NoDocument" xml:space="preserve"><value>CorelDRAW'da açık bir belge yok; önce belgeyi inceleyin.</value></data>
+  <data name="Preflight.Page" xml:space="preserve"><value>Sayfa: {0} × {1} mm, {2} nesne</value></data>
+  <data name="Preflight.PageInvalid" xml:space="preserve"><value>Sayfa ölçüsü geçersiz.</value></data>
+  <data name="Preflight.PageMismatch" xml:space="preserve"><value>Sayfa ölçüsü {0} × {1} mm; bu iş için {2} × {3} mm olmalı.</value></data>
+  <data name="Preflight.Placeholder" xml:space="preserve"><value>{0} için kaynak dosya eklenmemiş; belgede hâlâ yer tutucu çerçeve var.</value></data>
+  <data name="Preflight.ZeroSize" xml:space="preserve"><value>{0} nesnesinin boyutu sıfır.</value></data>
+  <data name="Preflight.OutsidePage" xml:space="preserve"><value>{0} sayfanın dışına taşıyor.</value></data>
+  <data name="Preflight.TextOutsidePage" xml:space="preserve"><value>{0} metni sayfanın dışına taşıyor.</value></data>
+  <data name="Preflight.EmptyText" xml:space="preserve"><value>{0} metni boş.</value></data>
+  <data name="Preflight.FontMissing" xml:space="preserve"><value>{0}: “{1}” yazı tipi bu bilgisayarda yüklü değil.</value></data>
+  <data name="Preflight.UncertainText" xml:space="preserve"><value>Referanstan okunan metin kesin değil, kontrol edin: “{0}”</value></data>
+  <data name="Preflight.MissingFile" xml:space="preserve"><value>Gerekli dosya bulunamadı: {0}</value></data>
+  <data name="Preflight.DuplicateOutput" xml:space="preserve"><value>Aynı çıktı dosyası birden fazla kez yazılacak: {0}</value></data>
+  <data name="Preflight.NotWritable" xml:space="preserve"><value>Çıktı klasörüne yazılamıyor: {0}</value></data>
+  <data name="Preflight.Overwrite" xml:space="preserve"><value>Var olan dosyanın üzerine yazılacak: {0}</value></data>
+  <data name="Batch.SheetNotFound" xml:space="preserve"><value>“{0}” adında bir çalışma sayfası yok. Bulunan sayfalar: {1}</value></data>
+  <data name="Batch.UnsupportedFile" xml:space="preserve"><value>Bu veri dosyası türü desteklenmiyor: {0}. Desteklenenler: .csv, .xlsx</value></data>
+  <data name="Batch.ExcelUnreadable" xml:space="preserve"><value>Excel dosyası okunamadı: {0}</value></data>
 </root>
