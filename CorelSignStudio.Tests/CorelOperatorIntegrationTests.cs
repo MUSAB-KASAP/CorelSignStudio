@@ -15,14 +15,137 @@ public sealed class CorelDrawCollection
 }
 
 /// <summary>
+/// One CorelDRAW connection shared by the operator tests, so a full run starts CorelDRAW once instead of
+/// once per test. Does nothing unless COREL_INTEGRATION=1.
+/// </summary>
+public sealed class CorelOperatorFixture : IAsyncLifetime
+{
+    private CorelProcessJanitor _janitor = new();
+
+    public static bool Enabled =>
+        string.Equals(Environment.GetEnvironmentVariable("COREL_INTEGRATION"), "1", StringComparison.Ordinal);
+
+    public CorelAutomationService? Service { get; private set; }
+    public CorelConnectionInfo? Connection { get; private set; }
+    public List<string> Log { get; } = [];
+    public Action<string>? Sink { get; set; }
+
+    public async Task InitializeAsync()
+    {
+        if (!Enabled)
+        {
+            return;
+        }
+
+        _janitor = new CorelProcessJanitor();
+        Service = new CorelAutomationService(log: message =>
+        {
+            lock (Log)
+            {
+                Log.Add(message);
+            }
+
+            try
+            {
+                Sink?.Invoke(message);
+            }
+            catch (InvalidOperationException)
+            {
+                // The test that owned the output helper has already finished.
+            }
+        });
+        Connection = await Service.ConnectPreservingVisibilityAsync();
+    }
+
+    public async Task DisposeAsync()
+    {
+        if (Service is null)
+        {
+            return;
+        }
+
+        try
+        {
+            await Service.DisposeAsync();
+        }
+        catch (Exception)
+        {
+            // Quit can be refused; the janitor still ends an instance this run started.
+        }
+
+        _janitor.Dispose();
+    }
+}
+
+/// <summary>
+/// Observed with the CorelDRAW 2026 trial: a hidden automation instance stays alive after Quit(), and a
+/// later test can then bind to that half-closed instance and hang. This fixture ends the instances a
+/// test class itself started — never one that was already running when the class began.
+/// </summary>
+public sealed class CorelProcessJanitor : IDisposable
+{
+    private readonly HashSet<int> _before = CorelOperatorFixture.Enabled ? CorelProcessIds() : [];
+
+    public void Dispose()
+    {
+        if (!CorelOperatorFixture.Enabled)
+        {
+            return;
+        }
+
+        foreach (var id in CorelProcessIds().Except(_before))
+        {
+            try
+            {
+                using var process = System.Diagnostics.Process.GetProcessById(id);
+                if (!process.WaitForExit(TimeSpan.FromSeconds(8)))
+                {
+                    process.Kill();
+                    process.WaitForExit(TimeSpan.FromSeconds(10));
+                }
+            }
+            catch (Exception exception) when (exception is ArgumentException or InvalidOperationException or System.ComponentModel.Win32Exception)
+            {
+                // Already gone.
+            }
+        }
+    }
+
+    private static HashSet<int> CorelProcessIds()
+    {
+        var processes = System.Diagnostics.Process.GetProcessesByName("CorelDRW");
+        try
+        {
+            return processes.Select(process => process.Id).ToHashSet();
+        }
+        finally
+        {
+            foreach (var process in processes)
+            {
+                process.Dispose();
+            }
+        }
+    }
+}
+
+/// <summary>
 /// Opt-in end-to-end test of the inspector, executor, recipes and batch engine against the installed
 /// CorelDRAW 2026. Run with the environment variable COREL_INTEGRATION=1.
 /// </summary>
 [Collection(CorelDrawCollection.Name)]
-public sealed class CorelOperatorIntegrationTests(ITestOutputHelper output)
+public sealed class CorelOperatorIntegrationTests : IClassFixture<CorelOperatorFixture>
 {
-    private static bool Enabled =>
-        string.Equals(Environment.GetEnvironmentVariable("COREL_INTEGRATION"), "1", StringComparison.Ordinal);
+    private readonly ITestOutputHelper output;
+    private readonly CorelOperatorFixture fixture;
+
+    public CorelOperatorIntegrationTests(CorelOperatorFixture fixture, ITestOutputHelper output)
+    {
+        this.fixture = fixture;
+        this.output = output;
+        fixture.Sink = output.WriteLine;
+    }
+
+    private static bool Enabled => CorelOperatorFixture.Enabled;
 
     [Fact]
     [Trait("Category", "CorelIntegration")]
@@ -35,17 +158,13 @@ public sealed class CorelOperatorIntegrationTests(ITestOutputHelper output)
         }
 
         var outputRoot = PrepareOutputFolder("operator");
-        var log = new List<string>();
-        await using var service = new CorelAutomationService(log: message =>
-        {
-            log.Add(message);
-            output.WriteLine(message);
-        });
+        var log = fixture.Log;
+        var service = fixture.Service!;
         var inspector = new CorelDocumentInspector(service);
         var executor = new CorelActionExecutor(service);
 
         // 1. Connect.
-        var connection = await service.ConnectPreservingVisibilityAsync();
+        var connection = fixture.Connection!;
         Assert.Equal(ApartmentState.STA, connection.ApartmentState);
         var userHadDocumentOpen = await inspector.InspectActiveDocumentAsync() is not null;
         try
@@ -262,7 +381,7 @@ public sealed class CorelOperatorIntegrationTests(ITestOutputHelper output)
             outputs.ProducedFiles,
             FailedPlan = new { failed.FailedActionId, failed.RolledBack, failed.RollbackNote },
             Snapshot = reopened,
-            Log = log,
+            Log = log.ToArray(),
         }));
     }
 
@@ -277,8 +396,7 @@ public sealed class CorelOperatorIntegrationTests(ITestOutputHelper output)
         }
 
         var outputRoot = PrepareOutputFolder("batch");
-        await using var service = new CorelAutomationService(log: output.WriteLine);
-        await service.ConnectPreservingVisibilityAsync();
+        var service = fixture.Service!;
         var recipe = RecipeBuilder.FromPlan(
             AutomationTestData.DoorSignPlan(), "Employee Door Sign", [new RecipeVariableBinding("PERSON_NAME", "Ahmet Yılmaz")]);
         var job = new BatchJob
@@ -319,6 +437,63 @@ public sealed class CorelOperatorIntegrationTests(ITestOutputHelper output)
         if (!userHadDocumentOpen)
         {
             Assert.Null(await inspector.InspectActiveDocumentAsync());
+        }
+    }
+
+    [Fact]
+    [Trait("Category", "CorelIntegration")]
+    public async Task Typed_commands_flow_through_planner_plan_and_executor_into_coreldraw()
+    {
+        if (!Enabled)
+        {
+            output.WriteLine("Set COREL_INTEGRATION=1 to run the installed-CorelDRAW planner test.");
+            return;
+        }
+
+        var service = fixture.Service!;
+        var inspector = new CorelDocumentInspector(service);
+        var executor = new CorelActionExecutor(service);
+        var planner = new Domain.Planning.DeterministicCommandPlanner();
+        var userHadDocumentOpen = await inspector.InspectActiveDocumentAsync() is not null;
+
+        async Task<PlanExecutionResult> Say(string request)
+        {
+            var planning = await planner.PlanAsync(new Domain.Planning.PlanningRequest
+            {
+                UserRequest = request,
+                Document = await inspector.InspectActiveDocumentAsync(),
+            });
+            Assert.True(planning.Success, string.Join(" | ", planning.UnrecognizedCommands));
+            return await Run(executor, planning.Plan!);
+        }
+
+        try
+        {
+            await Say("Create a 500x700 mm document");
+            var text = (await Say("Add text TEST in the center")).CreatedObjectIds.Single();
+            var rectangle = (await Say("Add a rectangle 200x80 mm at 20,20")).CreatedObjectIds.Single();
+            var placed = (await inspector.InspectActiveDocumentAsync())!;
+            Assert.Equal(250, placed.FindShape(text)!.Bounds.CenterXMm, 0);
+            Assert.Equal(350, placed.FindShape(text)!.Bounds.CenterYMm, 0);
+
+            await Say($"Move {text} 10 mm right");
+            var moved = (await inspector.InspectActiveDocumentAsync())!;
+            Assert.Equal(placed.FindShape(text)!.Bounds.XMm + 10, moved.FindShape(text)!.Bounds.XMm, 1);
+            Assert.Equal(placed.FindShape(text)!.Bounds.YMm, moved.FindShape(text)!.Bounds.YMm, 1);
+
+            await Say($"Change {text} text to HELLO\nResize {rectangle} to 100x50 mm\nSet fill of {rectangle} to red");
+
+            var document = (await inspector.InspectActiveDocumentAsync())!;
+            Assert.Equal("HELLO", document.FindShape(text)!.Text);
+            Assert.Equal((100, 50), (Math.Round(document.FindShape(rectangle)!.Bounds.WidthMm), Math.Round(document.FindShape(rectangle)!.Bounds.HeightMm)));
+            Assert.Equal("#FF0000", document.FindShape(rectangle)!.Fill!.ColorHex);
+
+            var table = (await Say("Create a table with 8 columns and 20 rows and center all text")).CreatedObjectIds.Single();
+            Assert.Equal(ShapeKind.Table, (await inspector.InspectActiveDocumentAsync())!.FindShape(table)!.Type);
+        }
+        finally
+        {
+            await CloseTestDocuments(inspector, executor, userHadDocumentOpen);
         }
     }
 

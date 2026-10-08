@@ -9,7 +9,7 @@ using Xunit.Abstractions;
 namespace CorelSignStudio.Tests;
 
 [Collection(CorelDrawCollection.Name)]
-public sealed class CorelDrawIntegrationTests(ITestOutputHelper output)
+public sealed class CorelDrawIntegrationTests(ITestOutputHelper output) : IClassFixture<CorelProcessJanitor>
 {
     [Fact]
     [Trait("Category", "CorelIntegration")]
