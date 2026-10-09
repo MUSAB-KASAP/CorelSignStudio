@@ -29,6 +29,7 @@
     <ProjectReference Include="..\CorelSignStudio.Storage\CorelSignStudio.Storage.csproj" />
     <ProjectReference Include="..\CorelSignStudio.AI\CorelSignStudio.AI.csproj" />
     <ProjectReference Include="..\CorelSignStudio.Imaging\CorelSignStudio.Imaging.csproj" />
+    <ProjectReference Include="..\CorelSignStudio.App\CorelSignStudio.App.csproj" />
   </ItemGroup>
 
 </Project>

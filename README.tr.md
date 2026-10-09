@@ -108,7 +108,9 @@ Ne yapılır:
   Belgenin tamamı tek grup yapılmaz.
 - Türkçe ve Arapça metinler olduğu gibi korunur. Net okunamayan metin "emin değil" olarak işaretlenir.
 - **Vektör dosyalar (SVG, CDR, tek sayfalı PDF) yeniden çizilmez**: kendi nesneleri içe aktarılır ve yapay
-  zekâya gönderilmez. Çok sayfalı PDF'de hangi sayfa istendiği sorulur.
+  zekâya gönderilmez. Çok sayfalı bir PDF eklediğinizde "PDF 6 sayfa içeriyor" kutusu çıkar: **Analiz edilecek
+  sayfa** listesinden sayfayı seçin, isterseniz **Sayfayı Önizle** ile bakın. Sayfa kendiliğinden seçilmez;
+  isteğinize "3. sayfayı yap" yazarsanız o sayfa kullanılır.
 - **Logo ve karmaşık çizimler uydurulmaz.** Varlık kütüphanesinde eşleşen dosya varsa o kullanılır; "görsel
   olarak kullan" derseniz referanstan kesilen parça yerleştirilir; aksi hâlde pembe çerçeveli, adı
   "YER TUTUCU: …" olan bir kutu konur ve uyarı verilir.
@@ -139,13 +141,21 @@ Tasarım CorelDRAW'da oluşturulduktan sonra:
   hedef benzerliğe ulaşılınca, düzeltilecek güvenli bir şey kalmayınca veya bir geçiş işe yaramayınca durur.
   Her geçiş CorelDRAW'da tek bir Ctrl+Z adımıdır. Hiçbir zaman nesne silinmez; eksik bir nesne uydurulmaz,
   bildirilir.
-- **İptal** — uzun süren analiz, karşılaştırma, iyileştirme ve toplu işler iptal edilebilir.
+- **İptal** — uzun süren planlama, analiz, uygulama, karşılaştırma, iyileştirme ve toplu işler iptal edilebilir.
+
+Bu düğmeler "CORELDRAW'DA UYGULA" düğmesinin altındadır; sonuçlar sağ alttaki **Referans Karşılaştırması**
+sekmesinde görünür. Karşılaştırma yalnızca bu oturumda bir referanstan oluşturulmuş belge için çalışır. Araya
+başka bir belge açtıysanız uygulama bunu fark eder ve yanlış belgeyle karşılaştırma yapmaz.
 
 ## Üretim kontrolü
 
 Dosyaları yazmadan önce **Üretim Kontrolü**'ne basın. Kontrol edilenler: sayfa ölçüsü, sayfadan taşan nesne ve
 metinler, sıfır boyutlu nesneler, yüklü olmayan yazı tipleri, hâlâ duran yer tutucular, net okunamamış
 metinler, eksik kaynak dosyalar, yazılamayan veya çakışan çıktı yolları, üzerine yazılacak dosyalar.
+
+Görsellerin **çözünürlüğü** de denetlenir: yerleştirildiği boyuttaki etkin DPI hesaplanır. 200 DPI ve üzeri
+yeterlidir, 150–199 DPI uyarıdır, 150 DPI altı güçlü uyarıdır. Çözünürlük belirlenemiyorsa (örneğin eğik
+döndürülmüş bir görselde) tahmin yürütülmez, "belirlenemedi" yazılır.
 
 - **Hata** olan iş üretime uygun değildir (örneğin logo yerine hâlâ yer tutucu var).
 - **Uyarı**lar gözden geçirilip kabul edilebilir (örneğin yazı tipi yaklaşık eşleştirildi).
@@ -217,9 +227,11 @@ numaralı işler gibi **düzenli üretim tasarımları** için güçlüdür.
 - Döndürme açısı ve yazı kalınlığı karşılaştırılmaz. Yazı tipleri yaklaşık eşleştirilir ve bu belirtilir.
 - Arapça gibi sağdan sola metinler yazıldığı gibi oluşturulur; CorelDRAW'da kontrol edilmesi istenir.
 - Birleştirilmiş tablo hücreleri yalnızca bildirilir. Ok uçları çizilmez.
-- Çok sayfalı PDF'de seçilen sayfa görüntüsünden yeniden çizilir; özgün vektörleri kullanılmaz.
+- Tek sayfalı PDF kendi nesneleriyle içe aktarılır (metin düzenlenebilir metin olarak gelir). Çok sayfalı
+  PDF'de seçilen sayfa görüntüsünden yeniden çizilir; özgün vektörleri kullanılmaz.
 - Düzenlemeler etkin sayfada yapılır.
-- Üretim kontrolü görsellerin çözünürlüğünü (DPI) denetlemez.
+- Yapay zekâ ile planlama, görsel analizi ve görsel karşılaştırma bu depoda yalnızca hazır yanıtlarla sınandı;
+  gerçek kullanım için API anahtarı gerekir.
 - Toplu iş verisi `.csv` ve `.xlsx` olabilir; eski `.xls` biçimi desteklenmez.
 - Dil, uygulama açılırken belirlenir; çalışırken değiştirilemez.
 - Doğrulama mesajlarında alan adları (`WidthMm` gibi) teknik adlarıyla geçer.
@@ -232,7 +244,10 @@ numaralı işler gibi **düzenli üretim tasarımları** için güçlüdür.
 - Sürüm numarası **1.0.0**; Ayarlar > Hakkında bölümünde görünür.
 - `build\publish.ps1` yayınlanabilir Windows klasörünü `artifacts\release\CorelAI-Operator` altına üretir
   (.NET kurulumu gerektirmez). CorelDRAW 2026 ayrıca kurulu olmalıdır.
-- `build\installer.iss` bu klasörden kurulum dosyası üreten Inno Setup betiğidir (Inno Setup 6 gerekir).
+- `build\installer.iss` bu klasörden kurulum dosyası üreten Inno Setup betiğidir. Inno Setup 6 kuruluysa
+  `publish.ps1` kurulum dosyasını da kendisi üretir; kurulu değilse üretmez ve bunu bildirir. Depoda hazır bir
+  kurulum dosyası yoktur.
+- Yayınlanan kopya kendini sınayabilir: `CorelSignStudio.App.exe --selftest rapor.txt --corel`.
 - Kurulu uygulama verilerini `%LOCALAPPDATA%\CorelSignStudio` altında, çıktıları `Belgeler\Corel AI Operatörü`
   altında tutar. API anahtarı ve kişisel ayarlar yayın paketine dahil değildir.
 

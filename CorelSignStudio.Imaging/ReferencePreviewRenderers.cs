@@ -366,3 +366,20 @@ public sealed class SkiaReferenceImageCropper(ReferenceTempStore store) : IRefer
         }
     }
 }
+
+/// <summary>How many pages a PDF has, without rendering any of them.</summary>
+public static class PdfPages
+{
+    /// <returns>The page count, or 1 when the file cannot be read as a PDF.</returns>
+    public static int Count(string path)
+    {
+        try
+        {
+            return Math.Max(1, PDFtoImage.Conversion.GetPageCount(File.ReadAllBytes(path)));
+        }
+        catch (Exception exception) when (exception is not OutOfMemoryException)
+        {
+            return 1;
+        }
+    }
+}

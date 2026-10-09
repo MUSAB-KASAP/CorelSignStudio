@@ -52,9 +52,9 @@ GENISLIK_MM = 500</value></data>
   <data name="Recipes.Use" xml:space="preserve"><value>Otomasyonu Kullan</value></data>
   <data name="Recipes.Delete" xml:space="preserve"><value>Otomasyonu Sil</value></data>
   <data name="Batch.Title" xml:space="preserve"><value>Tek otomasyon, çok satır</value></data>
-  <data name="Batch.Hint" xml:space="preserve"><value>CSV dosyasındaki her satır için ayrı bir CorelDRAW çıktısı üretilir. Var olan dosyaların üzerine yazılmaz.</value></data>
+  <data name="Batch.Hint" xml:space="preserve"><value>Veri dosyasındaki (CSV veya Excel) her satır için ayrı bir CorelDRAW çıktısı üretilir. Var olan dosyaların üzerine yazılmaz.</value></data>
   <data name="Batch.Recipe" xml:space="preserve"><value>OTOMASYON</value></data>
-  <data name="Batch.Data" xml:space="preserve"><value>CSV DOSYASI</value></data>
+  <data name="Batch.Data" xml:space="preserve"><value>VERİ DOSYASI (CSV veya Excel)</value></data>
   <data name="Common.Browse" xml:space="preserve"><value>Gözat…</value></data>
   <data name="Batch.NamePattern" xml:space="preserve"><value>ÇIKTI ADI ŞABLONU (isteğe bağlı)</value></data>
   <data name="Batch.NamePatternTip" xml:space="preserve"><value>Örnek: {{KISI_ADI}}_{{ROW}}</value></data>
@@ -169,12 +169,11 @@ Devam etmek istiyor musunuz?</value></data>
   <data name="Recipe.Type.Number" xml:space="preserve"><value>Sayı</value></data>
   <data name="Recipe.Type.Boolean" xml:space="preserve"><value>Evet/Hayır</value></data>
   <data name="Batch.JobName" xml:space="preserve"><value>{0} toplu işlemi</value></data>
-  <data name="Batch.Hint.NoRecipe" xml:space="preserve"><value>CSV dosyasının ilk satırında otomasyonun değişken adları bulunmalıdır.</value></data>
+  <data name="Batch.Hint.NoRecipe" xml:space="preserve"><value>Veri dosyasının ilk satırında otomasyonun değişken adları bulunmalıdır.</value></data>
   <data name="Batch.Hint.NoVariables" xml:space="preserve"><value>Bu otomasyonun değişkeni yok; her satır aynı sonucu üretir.</value></data>
-  <data name="Batch.Hint.Columns" xml:space="preserve"><value>CSV dosyasında beklenen sütunlar: {0}</value></data>
-  <data name="Batch.Status.Initial" xml:space="preserve"><value>Bir otomasyon ve bir CSV dosyası seçin. Henüz veri yüklenmedi.</value></data>
+  <data name="Batch.Hint.Columns" xml:space="preserve"><value>Veri dosyasında beklenen sütunlar: {0}</value></data>
+  <data name="Batch.Status.Initial" xml:space="preserve"><value>Bir otomasyon ve bir veri dosyası (CSV veya Excel) seçin. Henüz veri yüklenmedi.</value></data>
   <data name="Batch.Status.ChooseRecipe" xml:space="preserve"><value>Önce bir otomasyon seçin.</value></data>
-  <data name="Batch.Status.ChooseCsv" xml:space="preserve"><value>Bir CSV dosyası seçin.</value></data>
   <data name="Batch.Status.ChooseFormat" xml:space="preserve"><value>En az bir çıktı türü seçin.</value></data>
   <data name="Batch.Status.Preview" xml:space="preserve"><value>{0} satır: {1} hazır, {2} sorunlu. Çıktı klasörü: {3}</value></data>
   <data name="Batch.Status.ReadError" xml:space="preserve"><value>Toplu iş verisi okunamadı: {0}</value></data>
@@ -188,8 +187,6 @@ Devam etmek istiyor musunuz?</value></data>
   <data name="Batch.Row.Failed" xml:space="preserve"><value>Başarısız: {0}</value></data>
   <data name="Dialog.ReferencesTitle" xml:space="preserve"><value>Referans dosyalarını seçin</value></data>
   <data name="Dialog.ReferencesFilter" xml:space="preserve"><value>Tasarım ve görsel dosyaları|*.cdr;*.pdf;*.svg;*.jpg;*.jpeg;*.png|Tüm dosyalar|*.*</value></data>
-  <data name="Dialog.CsvTitle" xml:space="preserve"><value>CSV dosyasını seçin</value></data>
-  <data name="Dialog.CsvFilter" xml:space="preserve"><value>CSV dosyaları|*.csv;*.txt|Tüm dosyalar|*.*</value></data>
   <data name="Dialog.AssetsTitle" xml:space="preserve"><value>Varlık kütüphanesine eklenecek dosyaları seçin</value></data>
   <data name="Dialog.AllFilesFilter" xml:space="preserve"><value>Tüm dosyalar|*.*</value></data>
   <data name="Dialog.OutputFolderTitle" xml:space="preserve"><value>Çıktı klasörünü seçin</value></data>
@@ -253,4 +250,71 @@ Devam etmek istiyor musunuz?</value></data>
   <data name="Analysis.Warnings" xml:space="preserve"><value>Uyarılar:</value></data>
   <data name="Analysis.Line" xml:space="preserve"><value> - {0}</value></data>
   <data name="Analysis.SizeFromRequest" xml:space="preserve"><value>Fiziksel Ölçü: {0} (isteğinizden)</value></data>
+  <data name="Batch.Status.ChooseData" xml:space="preserve"><value>Bir veri dosyası (CSV veya Excel) seçin.</value></data>
+  <data name="Batch.Status.NoRows" xml:space="preserve"><value>Veri dosyasında kayıt yok.</value></data>
+  <data name="Dialog.BatchDataTitle" xml:space="preserve"><value>Veri dosyasını seçin</value></data>
+  <data name="Dialog.BatchDataFilter" xml:space="preserve"><value>Veri dosyaları (CSV, Excel)|*.csv;*.txt;*.xlsx;*.xlsm|CSV dosyaları|*.csv;*.txt|Excel dosyaları|*.xlsx;*.xlsm|Tüm dosyalar|*.*</value></data>
+  <data name="Batch.Worksheet" xml:space="preserve"><value>ÇALIŞMA SAYFASI</value></data>
+  <data name="Batch.Data.Records" xml:space="preserve"><value>{0} kayıt bulundu</value></data>
+  <data name="Batch.Data.Sheet" xml:space="preserve"><value>Çalışma Sayfası: {0}</value></data>
+  <data name="Batch.Data.Variables" xml:space="preserve"><value>Değişkenler: {0}</value></data>
+  <data name="Batch.Data.Row" xml:space="preserve"><value>{0}.  {1}</value></data>
+  <data name="Batch.Data.SampleTitle" xml:space="preserve"><value>İLK KAYITLAR</value></data>
+  <data name="Operator.Compare" xml:space="preserve"><value>Referansla Karşılaştır</value></data>
+  <data name="Operator.CompareTip" xml:space="preserve"><value>Belgedeki nesneleri referansın analiziyle ölçerek karşılaştırır. Yapay zekâ yapılandırılmışsa referans ve sayfa görüntüsü de sağlayıcıya gönderilerek karşılaştırılır.</value></data>
+  <data name="Operator.Improve" xml:space="preserve"><value>Otomatik İyileştir</value></data>
+  <data name="Operator.ImproveTip" xml:space="preserve"><value>Ölçülen farkları (konum, boyut, metin, renk) en fazla 3 geçişte düzeltir. Hiçbir nesne silinmez; her geçiş tek bir Ctrl+Z adımıdır.</value></data>
+  <data name="Operator.Preflight" xml:space="preserve"><value>Üretim Kontrolü</value></data>
+  <data name="Operator.PreflightTip" xml:space="preserve"><value>Dosyaları üretmeden önce belgeyi denetler: sayfa ölçüsü, taşan nesneler, eksik yazı tipleri, görsel çözünürlüğü, eksik dosyalar.</value></data>
+  <data name="Review.ComparisonTab" xml:space="preserve"><value>Referans Karşılaştırması</value></data>
+  <data name="Review.PreflightTab" xml:space="preserve"><value>Üretim Kontrolü</value></data>
+  <data name="Compare.Title.None" xml:space="preserve"><value>Henüz karşılaştırma yapılmadı</value></data>
+  <data name="Compare.Hint" xml:space="preserve"><value>Bir referansı CorelDRAW'da yeniden oluşturduktan sonra “Referansla Karşılaştır” düğmesiyle sonucu referansla karşılaştırabilirsiniz.</value></data>
+  <data name="Compare.Ready" xml:space="preserve"><value>Tasarım referanstan oluşturuldu. “Referansla Karşılaştır” ile sonucu denetleyebilir, “Otomatik İyileştir” ile ölçülen farkları düzeltebilirsiniz.</value></data>
+  <data name="Compare.NoDocument" xml:space="preserve"><value>CorelDRAW'da açık bir belge yok; karşılaştırılacak bir şey bulunamadı.</value></data>
+  <data name="Compare.Stale" xml:space="preserve"><value>Açık belge (“{0}”) bu referanstan ({1}) oluşturulmuş görünmüyor: referanstan oluşturulan nesnelerin hiçbiri belgede yok. Yanlış belgeyle karşılaştırma yapılmadı. Referanstan oluşturulan belgeyi öne getirip yeniden deneyin.</value></data>
+  <data name="Compare.Similarity" xml:space="preserve"><value>Benzerlik: %{0}</value></data>
+  <data name="Compare.Section.Matches" xml:space="preserve"><value>Doğru:</value></data>
+  <data name="Compare.Section.Differences" xml:space="preserve"><value>Farklar:</value></data>
+  <data name="Compare.Section.Visual" xml:space="preserve"><value>Yapay zekânın gördüğü farklar (bilgi amaçlı, kendiliğinden düzeltilmez):</value></data>
+  <data name="Compare.Section.Notes" xml:space="preserve"><value>Notlar:</value></data>
+  <data name="Compare.NoDifferences" xml:space="preserve"><value>Ölçülebilen bir fark bulunamadı.</value></data>
+  <data name="Compare.AiUsed" xml:space="preserve"><value>Yapay zekâ ile görsel karşılaştırma: yapıldı.</value></data>
+  <data name="Compare.AiNotUsed" xml:space="preserve"><value>Yapay zekâ ile görsel karşılaştırma: yapılmadı (yalnızca ölçüm kullanıldı).</value></data>
+  <data name="Improve.Finished" xml:space="preserve"><value>Otomatik iyileştirme tamamlandı.</value></data>
+  <data name="Improve.Cancelled" xml:space="preserve"><value>Otomatik iyileştirme iptal edildi.</value></data>
+  <data name="Improve.Initial" xml:space="preserve"><value>Başlangıç: %{0}</value></data>
+  <data name="Improve.Final" xml:space="preserve"><value>Sonuç: %{0}</value></data>
+  <data name="Improve.Passes" xml:space="preserve"><value>Geçiş: {0}</value></data>
+  <data name="Improve.Pass" xml:space="preserve"><value>Geçiş {0} / {1}: %{2} → %{3}</value></data>
+  <data name="Preflight.Title.None" xml:space="preserve"><value>Henüz üretim kontrolü yapılmadı</value></data>
+  <data name="Preflight.Hint" xml:space="preserve"><value>Dosyaları üretmeden önce “Üretim Kontrolü” düğmesine basın. Hatalar üretime engeldir; uyarıları gözden geçirip kabul edebilirsiniz.</value></data>
+  <data name="Preflight.Verdict.Blocked" xml:space="preserve"><value>Üretime uygun değil — hataları giderin</value></data>
+  <data name="Preflight.Verdict.Warnings" xml:space="preserve"><value>Üretilebilir — uyarıları gözden geçirin</value></data>
+  <data name="Preflight.Verdict.Ready" xml:space="preserve"><value>Üretime uygun</value></data>
+  <data name="Preflight.Section.Errors" xml:space="preserve"><value>Hatalar</value></data>
+  <data name="Preflight.Section.Warnings" xml:space="preserve"><value>Uyarılar</value></data>
+  <data name="Preflight.Section.Info" xml:space="preserve"><value>Bilgi</value></data>
+  <data name="Reference.PdfPages" xml:space="preserve"><value>PDF {0} sayfa içeriyor.</value></data>
+  <data name="Reference.PageToAnalyze" xml:space="preserve"><value>Analiz edilecek sayfa:</value></data>
+  <data name="Reference.PreviewPage" xml:space="preserve"><value>Sayfayı Önizle</value></data>
+  <data name="Recipes.FormulaHint" xml:space="preserve"><value>Değerlerde basit hesap kullanabilirsiniz (yalnızca sayılar, değişkenler, + - * / ve parantez):</value></data>
+  <data name="Recipes.FormulaExamples" xml:space="preserve"><value>{{GENISLIK / 2}}     {{YUKSEKLIK - 2 * KENAR}}</value></data>
+  <data name="About.Title" xml:space="preserve"><value>Hakkında</value></data>
+  <data name="About.Version" xml:space="preserve"><value>Sürüm {0}</value></data>
+  <data name="About.Description" xml:space="preserve"><value>CorelDRAW 2026 otomasyon ve yapay zekâ kontrol merkezi.</value></data>
+  <data name="Status.Comparing" xml:space="preserve"><value>Referansla karşılaştırılıyor</value></data>
+  <data name="Status.Compared" xml:space="preserve"><value>Karşılaştırma tamamlandı</value></data>
+  <data name="Status.Improving" xml:space="preserve"><value>Otomatik iyileştiriliyor</value></data>
+  <data name="Status.Improved" xml:space="preserve"><value>Otomatik iyileştirme tamamlandı</value></data>
+  <data name="Status.Preflight" xml:space="preserve"><value>Üretim kontrolü yapılıyor</value></data>
+  <data name="Status.PreviewingPage" xml:space="preserve"><value>Sayfa önizlemesi hazırlanıyor</value></data>
+  <data name="Status.Cancelled" xml:space="preserve"><value>İşlem iptal edildi.</value></data>
+  <data name="Log.Compared" xml:space="preserve"><value>Referansla karşılaştırıldı: benzerlik %{0}, {1} fark.</value></data>
+  <data name="Log.ImproveStarted" xml:space="preserve"><value>Otomatik iyileştirme başladı (en fazla {0} geçiş).</value></data>
+  <data name="Log.Improved" xml:space="preserve"><value>Otomatik iyileştirme: %{0} → %{1}, {2} geçiş. {3}</value></data>
+  <data name="Log.Preflight" xml:space="preserve"><value>Üretim kontrolü: {0} hata, {1} uyarı.</value></data>
+  <data name="Log.PdfPages" xml:space="preserve"><value>{0}: {1} sayfalı PDF. Analiz edilecek sayfayı seçin.</value></data>
+  <data name="Error.AiUnreachable" xml:space="preserve"><value>Yapay zekâ hizmetine ulaşılamadı. İnternet bağlantınızı kontrol edip yeniden deneyin.</value></data>
+  <data name="Error.DataUnreadable" xml:space="preserve"><value>Veri okunamadı. Teknik ayrıntılar günlük dosyasına yazıldı.</value></data>
 </root>

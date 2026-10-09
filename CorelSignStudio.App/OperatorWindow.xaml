@@ -176,6 +176,32 @@
                             </StackPanel>
 
                             <StackPanel Grid.Row="3">
+                                <Border Background="#FFF8E5" BorderBrush="#E8D9A8" BorderThickness="1" CornerRadius="6" Padding="10,8" Margin="0,0,0,12">
+                                    <Border.Visibility>
+                                        <Binding Path="HasPdfPages">
+                                            <Binding.Converter>
+                                                <x:Static Member="local:BoolToVisibleConverter.Instance"/>
+                                            </Binding.Converter>
+                                        </Binding>
+                                    </Border.Visibility>
+                                    <StackPanel>
+                                        <TextBlock Text="{Binding PdfPagesText}" FontFamily="Segoe UI Semibold" FontSize="12.5"/>
+                                        <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+                                            <TextBlock Text="{local:Loc Reference.PageToAnalyze}" VerticalAlignment="Center" FontSize="12.5" Margin="0,0,8,0"/>
+                                            <ComboBox ItemsSource="{Binding PdfPageNumbers}" SelectedItem="{Binding SelectedPdfPage}" MinWidth="70" Margin="0,0,8,0"/>
+                                            <Button Content="{local:Loc Reference.PreviewPage}" Command="{Binding PreviewPdfPageCommand}" Padding="10,5" FontSize="12"/>
+                                        </StackPanel>
+                                        <Image Source="{Binding PdfPagePreview}" MaxHeight="170" HorizontalAlignment="Left" Margin="0,8,0,0" Stretch="Uniform">
+                                            <Image.Visibility>
+                                                <Binding Path="HasPdfPagePreview">
+                                                    <Binding.Converter>
+                                                        <x:Static Member="local:BoolToVisibleConverter.Instance"/>
+                                                    </Binding.Converter>
+                                                </Binding>
+                                            </Image.Visibility>
+                                        </Image>
+                                    </StackPanel>
+                                </Border>
                                 <Expander Header="{local:Loc Operator.AnalysisHeader}" IsExpanded="True" Margin="0,0,0,12" FontFamily="Segoe UI Semibold" FontSize="12.5">
                                     <Expander.Style>
                                         <Style TargetType="Expander">
@@ -220,7 +246,7 @@
                         <Grid.RowDefinitions>
                             <RowDefinition Height="5*"/>
                             <RowDefinition Height="12"/>
-                            <RowDefinition Height="3*" MinHeight="150"/>
+                            <RowDefinition Height="4*" MinHeight="190"/>
                         </Grid.RowDefinitions>
 
                         <Border Grid.Row="0" Style="{StaticResource Card}">
@@ -247,6 +273,15 @@
                                 </ListBox>
                                 <StackPanel Grid.Row="3" Margin="0,12,0,0">
                                     <Button Content="{local:Loc Operator.Execute}" Command="{Binding ExecuteCommand}" Style="{StaticResource PrimaryButton}" HorizontalAlignment="Center"/>
+                                    <WrapPanel HorizontalAlignment="Center" Margin="0,10,0,0">
+                                        <Button Content="{local:Loc Operator.Compare}" Command="{Binding CompareCommand}" Padding="12,6" FontSize="12.5" Margin="4,2"
+                                                ToolTip="{local:Loc Operator.CompareTip}"/>
+                                        <Button Content="{local:Loc Operator.Improve}" Command="{Binding ImproveCommand}" Padding="12,6" FontSize="12.5" Margin="4,2"
+                                                ToolTip="{local:Loc Operator.ImproveTip}"/>
+                                        <Button Content="{local:Loc Operator.Preflight}" Command="{Binding PreflightCommand}" Padding="12,6" FontSize="12.5" Margin="4,2"
+                                                ToolTip="{local:Loc Operator.PreflightTip}"/>
+                                        <Button Content="{local:Loc Common.Cancel}" Command="{Binding CancelCommand}" Padding="12,6" FontSize="12.5" Margin="4,2"/>
+                                    </WrapPanel>
                                     <ProgressBar Height="3" IsIndeterminate="True" Margin="0,8,0,0">
                                         <ProgressBar.Style>
                                             <Style TargetType="ProgressBar">
@@ -284,23 +319,34 @@
                             </Grid>
                         </Border>
 
-                        <Border Grid.Row="2" Style="{StaticResource Card}">
-                            <Grid>
-                                <Grid.RowDefinitions>
-                                    <RowDefinition Height="Auto"/>
-                                    <RowDefinition Height="*"/>
-                                </Grid.RowDefinitions>
-                                <TextBlock Text="{local:Loc Operator.Activity}" Style="{StaticResource SectionTitle}"/>
-                                <ListBox Grid.Row="1" x:Name="LogList" ItemsSource="{Binding Logs}" BorderThickness="0" Background="#FAFBFC"
-                                         FontFamily="Cascadia Mono, Consolas" FontSize="11.5" Foreground="#394653"
-                                         ScrollViewer.HorizontalScrollBarVisibility="Disabled">
-                                    <ListBox.ItemTemplate>
-                                        <DataTemplate>
-                                            <TextBlock Text="{Binding}" TextWrapping="Wrap"/>
-                                        </DataTemplate>
-                                    </ListBox.ItemTemplate>
-                                </ListBox>
-                            </Grid>
+                        <Border Grid.Row="2" Style="{StaticResource Card}" Padding="10,6,10,10">
+                            <TabControl SelectedIndex="{Binding ReviewTabIndex}" BorderThickness="0" Background="Transparent">
+                                <TabItem Header="{local:Loc Operator.Activity}" Padding="10,5" FontSize="12">
+                                    <ListBox x:Name="LogList" ItemsSource="{Binding Logs}" BorderThickness="0" Background="#FAFBFC" Margin="0,6,0,0"
+                                             FontFamily="Cascadia Mono, Consolas" FontSize="11.5" Foreground="#394653"
+                                             ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                                        <ListBox.ItemTemplate>
+                                            <DataTemplate>
+                                                <TextBlock Text="{Binding}" TextWrapping="Wrap"/>
+                                            </DataTemplate>
+                                        </ListBox.ItemTemplate>
+                                    </ListBox>
+                                </TabItem>
+                                <TabItem Header="{local:Loc Review.ComparisonTab}" Padding="10,5" FontSize="12">
+                                    <DockPanel Margin="0,6,0,0">
+                                        <TextBlock DockPanel.Dock="Top" Text="{Binding ComparisonTitle}" FontFamily="Segoe UI Semibold" FontSize="15" Margin="2,0,0,6"/>
+                                        <TextBox Text="{Binding ComparisonText, Mode=OneWay}" IsReadOnly="True" TextWrapping="Wrap" FontFamily="Segoe UI" FontSize="12.5"
+                                                 Background="#FAFBFC" BorderBrush="#E6EAEE" VerticalScrollBarVisibility="Auto" VerticalContentAlignment="Top"/>
+                                    </DockPanel>
+                                </TabItem>
+                                <TabItem Header="{local:Loc Review.PreflightTab}" Padding="10,5" FontSize="12">
+                                    <DockPanel Margin="0,6,0,0">
+                                        <TextBlock DockPanel.Dock="Top" Text="{Binding PreflightTitle}" FontFamily="Segoe UI Semibold" FontSize="15" Margin="2,0,0,6"/>
+                                        <TextBox Text="{Binding PreflightText, Mode=OneWay}" IsReadOnly="True" TextWrapping="Wrap" FontFamily="Segoe UI" FontSize="12.5"
+                                                 Background="#FAFBFC" BorderBrush="#E6EAEE" VerticalScrollBarVisibility="Auto" VerticalContentAlignment="Top"/>
+                                    </DockPanel>
+                                </TabItem>
+                            </TabControl>
                         </Border>
                     </Grid>
                 </Grid>
@@ -379,9 +425,13 @@
                                     <DataGridTextColumn Header="{local:Loc Recipes.Column.Note}" Binding="{Binding Description}" IsReadOnly="True"/>
                                 </DataGrid.Columns>
                             </DataGrid>
-                            <StackPanel Grid.Row="4" Orientation="Horizontal" Margin="0,12,0,0">
-                                <Button Content="{local:Loc Recipes.Use}" Command="{Binding UseRecipeCommand}" Margin="0,0,10,0"/>
-                                <Button Content="{local:Loc Recipes.Delete}" Command="{Binding DeleteRecipeCommand}"/>
+                            <StackPanel Grid.Row="4" Margin="0,10,0,0">
+                                <TextBlock Style="{StaticResource Hint}" Text="{local:Loc Recipes.FormulaHint}"/>
+                                <TextBlock Text="{local:Loc Recipes.FormulaExamples}" FontFamily="Cascadia Mono, Consolas" FontSize="11.5" Foreground="{StaticResource MutedBrush}" Margin="0,2,0,0"/>
+                                <StackPanel Orientation="Horizontal" Margin="0,12,0,0">
+                                    <Button Content="{local:Loc Recipes.Use}" Command="{Binding UseRecipeCommand}" Margin="0,0,10,0"/>
+                                    <Button Content="{local:Loc Recipes.Delete}" Command="{Binding DeleteRecipeCommand}"/>
+                                </StackPanel>
                             </StackPanel>
                         </Grid>
                     </Border>
@@ -405,15 +455,27 @@
                             <ComboBox ItemsSource="{Binding Recipes}" SelectedItem="{Binding BatchRecipe}" DisplayMemberPath="Name"/>
                             <TextBlock Text="{Binding BatchRecipeHint}" Style="{StaticResource Hint}" Margin="0,4,0,12"/>
                             <TextBlock Text="{local:Loc Batch.Data}" Style="{StaticResource FieldLabel}"/>
-                            <Grid Margin="0,0,0,12">
+                            <Grid Margin="0,0,0,8">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="8"/>
                                     <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
-                                <TextBox Text="{Binding BatchCsvPath, UpdateSourceTrigger=PropertyChanged}" FontSize="12.5"/>
-                                <Button Grid.Column="2" Content="{local:Loc Common.Browse}" Command="{Binding BrowseBatchCsvCommand}" Padding="10,5" FontSize="12"/>
+                                <TextBox Text="{Binding BatchDataPath, UpdateSourceTrigger=PropertyChanged}" FontSize="12.5"/>
+                                <Button Grid.Column="2" Content="{local:Loc Common.Browse}" Command="{Binding BrowseBatchDataCommand}" Padding="10,5" FontSize="12"/>
                             </Grid>
+                            <StackPanel Margin="0,0,0,8">
+                                <StackPanel.Visibility>
+                                    <Binding Path="HasWorksheets">
+                                        <Binding.Converter>
+                                            <x:Static Member="local:BoolToVisibleConverter.Instance"/>
+                                        </Binding.Converter>
+                                    </Binding>
+                                </StackPanel.Visibility>
+                                <TextBlock Text="{local:Loc Batch.Worksheet}" Style="{StaticResource FieldLabel}"/>
+                                <ComboBox ItemsSource="{Binding WorksheetNames}" SelectedItem="{Binding SelectedWorksheet}"/>
+                            </StackPanel>
+                            <TextBlock Text="{Binding BatchDataSummary}" Style="{StaticResource Hint}" Margin="0,0,0,12"/>
                             <TextBlock Text="{local:Loc Batch.NamePattern}" Style="{StaticResource FieldLabel}"/>
                             <TextBox Text="{Binding BatchNamePattern, UpdateSourceTrigger=PropertyChanged}" FontSize="12.5"
                                      ToolTip="{local:Loc Batch.NamePatternTip}"/>
@@ -438,7 +500,7 @@
                             <StackPanel Orientation="Horizontal">
                                 <Button Content="{local:Loc Batch.Preview}" Command="{Binding PreviewBatchCommand}" Margin="0,0,8,0"/>
                                 <Button Content="{local:Loc Batch.Run}" Command="{Binding RunBatchCommand}" Style="{StaticResource PrimaryButton}" Padding="18,9" FontSize="13" Margin="0,0,8,0"/>
-                                <Button Content="{local:Loc Common.Cancel}" Command="{Binding CancelBatchCommand}"/>
+                                <Button Content="{local:Loc Common.Cancel}" Command="{Binding CancelCommand}"/>
                             </StackPanel>
                         </StackPanel>
                     </Border>
@@ -450,7 +512,26 @@
                                 <RowDefinition Height="*"/>
                             </Grid.RowDefinitions>
                             <TextBlock Text="{Binding BatchStatus}" Style="{StaticResource SectionTitle}" TextWrapping="Wrap"/>
-                            <ProgressBar Grid.Row="1" Height="6" Minimum="0" Maximum="100" Value="{Binding BatchPercent, Mode=OneWay}" Margin="0,2,0,10"/>
+                            <StackPanel Grid.Row="1">
+                                <ProgressBar Height="6" Minimum="0" Maximum="100" Value="{Binding BatchPercent, Mode=OneWay}" Margin="0,2,0,10"/>
+                                <StackPanel Margin="0,0,0,10">
+                                    <StackPanel.Visibility>
+                                        <Binding Path="BatchRecordCount">
+                                            <Binding.Converter>
+                                                <x:Static Member="local:PositiveToVisibleConverter.Instance"/>
+                                            </Binding.Converter>
+                                        </Binding>
+                                    </StackPanel.Visibility>
+                                    <TextBlock Text="{local:Loc Batch.Data.SampleTitle}" Style="{StaticResource FieldLabel}"/>
+                                    <ItemsControl ItemsSource="{Binding BatchSampleRows}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <TextBlock Text="{Binding}" FontSize="12" TextTrimming="CharacterEllipsis" Margin="0,1"/>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </StackPanel>
+                            </StackPanel>
                             <DataGrid Grid.Row="2" ItemsSource="{Binding BatchRows}" IsReadOnly="True">
                                 <DataGrid.Columns>
                                     <DataGridTextColumn Header="{local:Loc Batch.Column.Row}" Binding="{Binding Row}"/>
@@ -644,7 +725,12 @@
 
                         <TextBlock Text="{local:Loc Settings.Legacy}" Style="{StaticResource SectionTitle}"/>
                         <Button Content="{local:Loc Settings.OpenLegacy}" Command="{Binding OpenLegacyToolCommand}" HorizontalAlignment="Left"/>
-                        <TextBlock Style="{StaticResource Hint}" Margin="0,4,0,0" Text="{local:Loc Settings.LegacyHint}"/>
+                        <TextBlock Style="{StaticResource Hint}" Margin="0,4,0,18" Text="{local:Loc Settings.LegacyHint}"/>
+
+                        <TextBlock Text="{local:Loc About.Title}" Style="{StaticResource SectionTitle}"/>
+                        <TextBlock Text="{Binding AboutName}" FontFamily="Segoe UI Semibold" FontSize="16"/>
+                        <TextBlock Text="{Binding AboutVersion}" FontSize="13" Margin="0,2,0,6"/>
+                        <TextBlock Style="{StaticResource Hint}" Text="{local:Loc About.Description}" Margin="0,0,0,8"/>
                     </StackPanel></ScrollViewer>
                 </Border>
             </TabItem>

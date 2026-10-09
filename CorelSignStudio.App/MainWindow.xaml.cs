@@ -27,7 +27,14 @@ public partial class MainWindow : Window
         _captured = true;
         try
         {
-            var folder = Path.Combine(ProjectPaths.FindProjectRoot(), "artifacts", "screenshots");
+            // A development aid only: an installed copy never writes next to its executable.
+            var paths = AppPaths.Resolve();
+            if (!paths.IsDevelopment)
+            {
+                return;
+            }
+
+            var folder = Path.Combine(Path.GetDirectoryName(paths.DataFolder)!, "artifacts", "screenshots");
             Directory.CreateDirectory(folder);
             SaveVisual(this, Path.Combine(folder, "application.png"));
             SaveVisual(Preview, Path.Combine(folder, "preview.png"));

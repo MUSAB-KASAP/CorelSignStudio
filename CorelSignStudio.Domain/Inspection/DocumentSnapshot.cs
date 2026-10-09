@@ -137,6 +137,14 @@ public enum ShapeKind
     Other,
 }
 
+/// <summary>Pixel dimensions of a placed bitmap, as reported by the design application.</summary>
+public sealed record BitmapInfo(int PixelWidth, int PixelHeight)
+{
+    /// <summary>dpi = pixels / (millimetres / 25.4); null when either value is unknown.</summary>
+    public static double? EffectiveDpi(int pixels, double millimetres) =>
+        pixels > 0 && millimetres > 0 ? pixels / (millimetres / 25.4) : null;
+}
+
 public sealed record ShapeSnapshot
 {
     /// <summary>Stable logical id (for example <c>shape_017</c>); see <see cref="LogicalShapeId"/>.</summary>
@@ -156,6 +164,36 @@ public sealed record ShapeSnapshot
     public double? FontSizePt { get; init; }
     public required BoundsMm Bounds { get; init; }
     public double RotationDegrees { get; init; }
+
+    /// <summary>Only for bitmaps, and only when the pixel size could be read.</summary>
+    public BitmapInfo? Bitmap { get; init; }
+
+    /// <summary>
+    /// Resolution of a bitmap at the size it is placed. Unknown (null) without pixel dimensions, and for
+    /// a bitmap rotated off the axes, whose bounding box is not its placed size.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonIgnore]
+    public (double X, double Y)? EffectiveDpi
+    {
+        get
+        {
+            if (Bitmap is null)
+            {
+                return null;
+            }
+
+            var quarterTurns = RotationDegrees / 90;
+            if (Math.Abs(quarterTurns - Math.Round(quarterTurns)) > 0.01)
+            {
+                return null;
+            }
+
+            var sideways = ((int)Math.Round(quarterTurns) % 2) != 0;
+            var x = BitmapInfo.EffectiveDpi(Bitmap.PixelWidth, sideways ? Bounds.HeightMm : Bounds.WidthMm);
+            var y = BitmapInfo.EffectiveDpi(Bitmap.PixelHeight, sideways ? Bounds.WidthMm : Bounds.HeightMm);
+            return x is null || y is null ? null : (x.Value, y.Value);
+        }
+    }
     public FillInfo? Fill { get; init; }
     public OutlineInfo? Outline { get; init; }
     public required string LayerName { get; init; }

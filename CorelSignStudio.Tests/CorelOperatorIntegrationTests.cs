@@ -709,6 +709,356 @@ public sealed class CorelOperatorIntegrationTests : IClassFixture<CorelOperatorF
             FormattableString.Invariant($"{shape.Id}|{shape.Type}|{shape.Name}|{shape.Text}|{shape.Bounds.XMm:0.00}|{shape.Bounds.YMm:0.00}|{shape.Bounds.WidthMm:0.00}|{shape.Bounds.HeightMm:0.00}");
     }
 
+    /// <summary>
+    /// Things that were only assumed until they ran on the real application: the pixel size CorelDRAW
+    /// reports for a placed bitmap (and so its effective DPI), Arabic text surviving the round trip, and a
+    /// landscape full-page preview with artwork much smaller than the page.
+    /// </summary>
+    [Fact]
+    [Trait("Category", "CorelIntegration")]
+    public async Task Bitmap_resolution_arabic_text_and_a_landscape_page_preview_are_real()
+    {
+        if (!Enabled)
+        {
+            output.WriteLine("Set COREL_INTEGRATION=1 to run the installed-CorelDRAW production test.");
+            return;
+        }
+
+        var outputRoot = PrepareOutputFolder("production");
+        var service = fixture.Service!;
+        var inspector = new CorelDocumentInspector(service);
+        var executor = new CorelActionExecutor(service);
+        var userHadDocumentOpen = await inspector.InspectActiveDocumentAsync() is not null;
+        const string Arabic = "ممنوع الدخول";
+
+        static string Picture(string folder, string name, int pixels)
+        {
+            using var bitmap = new SkiaSharp.SKBitmap(pixels, pixels);
+            using (var canvas = new SkiaSharp.SKCanvas(bitmap))
+            {
+                canvas.Clear(SkiaSharp.SKColors.SteelBlue);
+                using var paint = new SkiaSharp.SKPaint { Color = SkiaSharp.SKColors.Orange };
+                canvas.DrawCircle(pixels / 2f, pixels / 2f, pixels / 3f, paint);
+            }
+
+            var path = Path.Combine(folder, name);
+            using var data = bitmap.Encode(SkiaSharp.SKEncodedImageFormat.Png, 100);
+            File.WriteAllBytes(path, data.ToArray());
+            return path;
+        }
+
+        var installed = System.Windows.Media.Fonts.SystemFontFamilies.Select(family => family.Source).ToArray();
+        var font = new Domain.References.InstalledFontResolver(installed, supportsText: App.FontCoverage.Supports).Resolve("Impact", 0.9, Arabic);
+        output.WriteLine($"Arabic font: asked for Impact, resolved to {font.FontFamily} ({font.Match}, missing glyphs in the asked font: {font.MissingGlyphs})");
+        Assert.True(App.FontCoverage.Supports(font.FontFamily, Arabic));
+
+        try
+        {
+            await Run(executor, new AutomationPlan
+            {
+                Name = "Production checks",
+                Target = DocumentTarget.NewDocument,
+                Actions =
+                [
+                    new CreateDocumentAction { Id = "doc", WidthMm = 300, HeightMm = 200 },
+                    new ImportFileAction { Id = "low", FilePath = Picture(outputRoot, "dusuk.png", 200), Name = "Düşük çözünürlük", XMm = 20, YMm = 20, FitWidthMm = 100, FitHeightMm = 100 },
+                    new ImportFileAction { Id = "high", FilePath = Picture(outputRoot, "yuksek.png", 1600), Name = "Yüksek çözünürlük", XMm = 150, YMm = 20, FitWidthMm = 100, FitHeightMm = 100 },
+                    new CreateTextAction { Id = "arabic", Text = Arabic, Name = "Arapça", XMm = 20, YMm = 140, FontFamily = font.FontFamily, FontSizePt = 48 },
+                ],
+            });
+
+            var document = (await inspector.InspectActiveDocumentAsync())!;
+
+            // ---- Bitmap pixel size and effective DPI: dpi = pixels / (mm / 25.4)
+            var low = document.FindShapesByName("Düşük çözünürlük").Single();
+            var high = document.FindShapesByName("Yüksek çözünürlük").Single();
+            output.WriteLine($"low : {low.Type} {low.Bitmap} at {low.Bounds.WidthMm:0.0} x {low.Bounds.HeightMm:0.0} mm -> {low.EffectiveDpi}");
+            output.WriteLine($"high: {high.Type} {high.Bitmap} at {high.Bounds.WidthMm:0.0} x {high.Bounds.HeightMm:0.0} mm -> {high.EffectiveDpi}");
+            Assert.Equal(ShapeKind.Bitmap, low.Type);
+            Assert.Equal(new BitmapInfo(200, 200), low.Bitmap);
+            Assert.Equal(new BitmapInfo(1600, 1600), high.Bitmap);
+            Assert.Equal(100, low.Bounds.WidthMm, 0);
+            Assert.Equal(50.8, low.EffectiveDpi!.Value.X, 0);
+            Assert.Equal(406.4, high.EffectiveDpi!.Value.X, 0);
+
+            var preflight = new Domain.Production.DesignPreflightService().Check(new Domain.Production.PreflightRequest { Document = document, InstalledFonts = installed });
+            foreach (var line in preflight.Errors.Concat(preflight.Warnings).Concat(preflight.Info))
+            {
+                output.WriteLine("  preflight: " + line);
+            }
+
+            Assert.Contains(preflight.Warnings, warning => warning.Contains("Düşük çözünürlük") && warning.Contains("DPI"));
+            Assert.DoesNotContain(preflight.Warnings, warning => warning.Contains("Yüksek çözünürlük"));
+            Assert.DoesNotContain(preflight.Warnings, warning => warning.Contains("Arapça")); // its font is installed
+
+            // ---- Arabic: the exact characters come back, in a font that has the glyphs
+            var arabic = document.FindShapesByName("Arapça").Single();
+            output.WriteLine($"arabic: '{arabic.Text}' in {arabic.FontFamily}, {arabic.Bounds.WidthMm:0.0} mm wide");
+            Assert.Equal(Arabic, arabic.Text);
+            Assert.Equal(font.FontFamily, arabic.FontFamily);
+            Assert.True(arabic.Bounds.WidthMm > 20, "the text has no visible extent");
+
+            // ---- Landscape page, artwork far smaller than the page
+            var before = document.AllShapes().Select(shape => $"{shape.Id}|{shape.Bounds}").ToArray();
+            var preview = await new CorelPagePreviewRenderer(service).RenderActivePageAsync(900);
+            Assert.Equal((900, 600), (preview.WidthPixels, preview.HeightPixels)); // 300 : 200, the page — not the artwork's bounding box
+            Assert.Equal(new Domain.References.PhysicalSize(300, 200), preview.PhysicalSize);
+            await File.WriteAllBytesAsync(Path.Combine(outputRoot, "yatay-tam-sayfa.png"), preview.Bytes);
+            using (var image = SkiaSharp.SKBitmap.Decode(preview.Bytes))
+            {
+                foreach (var (x, y) in new[] { (3, 3), (896, 3), (3, 596), (896, 596), (400, 570) })
+                {
+                    var pixel = image.GetPixel(x, y);
+                    Assert.True(pixel is { Red: > 240, Green: > 240, Blue: > 240, Alpha: 255 }, $"({x},{y}) = {pixel}: empty page areas must be white");
+                }
+
+                var onPicture = image.GetPixel((int)(70 / 300.0 * 900), (int)(70 / 200.0 * 600)); // centre of the first picture
+                Assert.False(onPicture is { Red: > 240, Green: > 240, Blue: > 240 }, $"artwork is missing from the preview: {onPicture}");
+            }
+
+            var after = (await inspector.InspectActiveDocumentAsync())!;
+            Assert.Equal(before, after.AllShapes().Select(shape => $"{shape.Id}|{shape.Bounds}"));
+
+            // Saved as CDR and PDF for a look by eye. (Reopening a CDR is covered by the operator-core test.)
+            var files = await Run(executor, new AutomationPlan
+            {
+                Name = "Save",
+                Actions = [new SaveDocumentAction { Id = "cdr", FilePath = Path.Combine(outputRoot, "arapca.cdr") }, new ExportPdfAction { Id = "pdf", FilePath = Path.Combine(outputRoot, "arapca.pdf") }],
+            });
+            Assert.Equal(2, files.ProducedFiles.Count);
+        }
+        finally
+        {
+            await CloseTestDocuments(inspector, executor, userHadDocumentOpen);
+        }
+    }
+
+    /// <summary>
+    /// The whole user workflow driven through the operator's view model — the same commands the buttons
+    /// are bound to — against the real CorelDRAW: reference → analysis → plan → execute → compare →
+    /// damage → compare → improve → production check → CDR/PDF → save as recipe → XLSX batch with
+    /// CDR/PDF/PNG/SVG. The reference analysis is a scripted answer (no AI credential on this machine);
+    /// everything after it is real.
+    /// </summary>
+    [Fact]
+    [Trait("Category", "CorelIntegration")]
+    public async Task The_operator_workflow_runs_end_to_end_through_the_view_model_in_coreldraw()
+    {
+        if (!Enabled)
+        {
+            output.WriteLine("Set COREL_INTEGRATION=1 to run the installed-CorelDRAW workflow test.");
+            return;
+        }
+
+        var outputRoot = PrepareOutputFolder("workflow");
+        var service = fixture.Service!;
+        var inspector = new CorelDocumentInspector(service);
+        var executor = new CorelActionExecutor(service);
+        var userHadDocumentOpen = await inspector.InspectActiveDocumentAsync() is not null;
+        var harness = new OperatorHarness(
+            inspector: inspector,
+            executor: executor,
+            pagePreview: new CorelPagePreviewRenderer(service),
+            referencePreviews: Imaging.CompositeReferencePreviewRenderer.CreateDefault(),
+            connect: async () => (await service.ConnectPreservingVisibilityAsync()).Version);
+        var viewModel = harness.ViewModel;
+        viewModel.OutputFolder = outputRoot;
+
+        void Dump(string title, string text)
+        {
+            output.WriteLine("---- " + title);
+            output.WriteLine(text);
+        }
+
+        try
+        {
+            // Reference → analysis → reviewable plan → CorelDRAW.
+            viewModel.AddReferences([ReferenceFixtures.ProhibitionSignPng()]);
+            viewModel.Request = "Bunun aynısını 500x700 mm olarak yap.";
+            await harness.Run(viewModel.PreparePlanCommand);
+            Assert.True(viewModel.HasAnalysis);
+            Assert.True(viewModel.ProposedOperations.Count > 5);
+            await harness.Run(viewModel.ExecuteCommand);
+            Assert.True(viewModel.HasComparisonContext, string.Join("\n", viewModel.Logs));
+            Assert.Equal(new Domain.References.PhysicalSize(500, 700), viewModel.ReconstructionContext!.Size);
+
+            // Compare: a fresh reconstruction matches.
+            await harness.Run(viewModel.CompareCommand);
+            Dump("fresh", viewModel.ComparisonTitle + "\n" + viewModel.ComparisonText);
+            Assert.True(viewModel.LastComparison!.Similarity >= 0.98);
+
+            // Damage it: title 15 mm down, ring 10 % larger, one colour changed.
+            var built = (await inspector.InspectActiveDocumentAsync())!;
+            var title = built.FindShapesByName(V1Fixtures.Title).Single();
+            var ring = built.FindShapesByName(V1Fixtures.Ring).Single(shape => shape.Type == ShapeKind.Ellipse);
+            await Run(executor, new AutomationPlan
+            {
+                Name = "Damage",
+                Actions =
+                [
+                    new MoveAction { Id = "low", Targets = [title.Id], DeltaYMm = 15 },
+                    new ResizeAction { Id = "big", Targets = [ring.Id], ScalePercent = 110 },
+                    new SetFillAction { Id = "colour", Targets = [title.Id], Color = "#1F5FBF" },
+                ],
+            });
+
+            await harness.Run(viewModel.CompareCommand);
+            Dump("damaged", viewModel.ComparisonTitle + "\n" + viewModel.ComparisonText);
+            var damaged = viewModel.LastComparison!;
+            Assert.Contains(damaged.Differences, difference => difference.Kind == Domain.References.DifferenceKind.Position && difference.ShapeName == V1Fixtures.Title);
+            Assert.Contains(damaged.Differences, difference => difference.Kind == Domain.References.DifferenceKind.Size && difference.ShapeName == V1Fixtures.Ring);
+            Assert.Contains(damaged.Differences, difference => difference.Kind == Domain.References.DifferenceKind.FillColor && difference.ShapeName == V1Fixtures.Title);
+            Assert.Contains("aşağıda", viewModel.ComparisonText);
+            Assert.False(damaged.AiUsed); // no credential: measured comparison only
+
+            // Bounded automatic improvement.
+            await harness.Run(viewModel.ImproveCommand);
+            Dump("improved", viewModel.ComparisonTitle + "\n" + viewModel.ComparisonText);
+            var improvement = viewModel.LastImprovement!;
+            Assert.InRange(improvement.Passes.Count, 1, 3);
+            Assert.True(improvement.FinalSimilarity > damaged.Similarity);
+            Assert.True(improvement.FinalSimilarity >= 0.98);
+            var repaired = (await inspector.InspectActiveDocumentAsync())!;
+            Assert.Equal(title.Bounds.CenterYMm, repaired.FindShape(title.Id)!.Bounds.CenterYMm, 0);
+            Assert.Equal(ring.Bounds.WidthMm, repaired.FindShape(ring.Id)!.Bounds.WidthMm, 0);
+
+            // Production check.
+            await harness.Run(viewModel.PreflightCommand);
+            Dump("preflight", viewModel.PreflightTitle + "\n" + viewModel.PreflightText);
+            Assert.True(viewModel.IsProductionReady);
+            Assert.Empty(viewModel.LastPreflight!.Errors);
+
+            // Save as a reusable automation (the last line of text becomes a variable).
+            viewModel.RecipeName = "Yasak Levhası";
+            viewModel.RecipeVariables = "SON_SATIR = YASAKTIR";
+            Assert.True(viewModel.SaveRecipeCommand.CanExecute(null));
+            viewModel.SaveRecipeCommand.Execute(null);
+            var recipe = harness.Recipes.FindByName("Yasak Levhası");
+            Assert.NotNull(recipe);
+            Assert.Equal(["SON_SATIR"], recipe.Variables.Select(variable => variable.Name));
+
+            // Files, through typed commands.
+            var cdr = Path.Combine(outputRoot, "levha.cdr");
+            var pdf = Path.Combine(outputRoot, "levha.pdf");
+            viewModel.Request = $"Dosyayı {cdr} olarak kaydet\n{pdf} olarak PDF dışa aktar";
+            await harness.Run(viewModel.PreparePlanCommand);
+            await harness.Run(viewModel.ExecuteCommand);
+            Assert.True(new FileInfo(cdr).Length > 1000);
+            Assert.True(new FileInfo(pdf).Length > 1000);
+            Assert.True(viewModel.HasComparisonContext); // saving does not make the reference stale
+
+            await Run(executor, new AutomationPlan { Name = "Close", Actions = [new CloseDocumentAction { Id = "close" }] });
+
+            // XLSX batch from the saved automation: two variations, four formats each.
+            var workbookPath = Path.Combine(outputRoot, "varyasyonlar.xlsx");
+            using (var workbook = new ClosedXML.Excel.XLWorkbook())
+            {
+                var other = workbook.AddWorksheet("Notlar");
+                other.Cell(1, 1).Value = "SON_SATIR";
+                other.Cell(2, 1).Value = "KULLANILMAZ";
+                var sheet = workbook.AddWorksheet("Levhalar");
+                sheet.Cell(1, 1).Value = "SON_SATIR";
+                sheet.Cell(2, 1).Value = "YASAKTIR";
+                sheet.Cell(3, 1).Value = "TEHLİKELİDİR";
+                workbook.SaveAs(workbookPath);
+            }
+
+            viewModel.BatchRecipe = viewModel.Recipes.Single(candidate => candidate.Name == "Yasak Levhası");
+            viewModel.BatchDataPath = workbookPath;
+            Assert.Equal(["Notlar", "Levhalar"], viewModel.WorksheetNames);
+            viewModel.SelectedWorksheet = "Levhalar";
+            Assert.Equal(2, viewModel.BatchRecordCount);
+            viewModel.BatchNamePattern = "levha_{{ROW}}";
+            viewModel.BatchCdr = viewModel.BatchPdf = viewModel.BatchPng = viewModel.BatchSvg = true;
+            await harness.Run(viewModel.RunBatchCommand);
+            Dump("batch", viewModel.BatchStatus + "\n" + string.Join("\n", viewModel.BatchRows.Select(row => $"{row.Row} {row.OutputName} {row.Status}")));
+            Assert.All(viewModel.BatchRows, row => Assert.Equal("Tamamlandı", row.Status));
+            var produced = Directory.GetFiles(outputRoot, "levha_*").Select(Path.GetFileName).Order().ToArray();
+            output.WriteLine(string.Join(", ", produced));
+            Assert.Equal(8, produced.Length);
+            Assert.All(new[] { ".cdr", ".pdf", ".png", ".svg" }, extension => Assert.Equal(2, produced.Count(name => name!.EndsWith(extension, StringComparison.OrdinalIgnoreCase))));
+            Assert.NotEqual(File.ReadAllBytes(Path.Combine(outputRoot, "levha_001.png")), File.ReadAllBytes(Path.Combine(outputRoot, "levha_002.png"))); // each row really carries its own text
+
+            foreach (var line in viewModel.Logs)
+            {
+                output.WriteLine(line);
+            }
+        }
+        finally
+        {
+            await CloseTestDocuments(inspector, executor, userHadDocumentOpen);
+        }
+    }
+
+    /// <summary>
+    /// What "vector content is reused" means on the real application: a single-page PDF brought in through
+    /// the import action arrives as editable vector objects, not as one flattened picture.
+    /// </summary>
+    [Fact]
+    [Trait("Category", "CorelIntegration")]
+    public async Task A_single_page_pdf_is_imported_as_editable_vector_objects()
+    {
+        if (!Enabled)
+        {
+            output.WriteLine("Set COREL_INTEGRATION=1 to run the installed-CorelDRAW PDF import test.");
+            return;
+        }
+
+        var outputRoot = PrepareOutputFolder("pdf-import");
+        var service = fixture.Service!;
+        var inspector = new CorelDocumentInspector(service);
+        var executor = new CorelActionExecutor(service);
+        var userHadDocumentOpen = await inspector.InspectActiveDocumentAsync() is not null;
+        var pdf = Path.Combine(outputRoot, "kaynak.pdf");
+
+        try
+        {
+            await Run(executor, new AutomationPlan
+            {
+                Name = "Source",
+                Target = DocumentTarget.NewDocument,
+                Actions =
+                [
+                    new CreateDocumentAction { Id = "doc", WidthMm = 200, HeightMm = 100 },
+                    new CreateRectangleAction { Id = "frame", XMm = 10, YMm = 10, WidthMm = 180, HeightMm = 80, OutlineWidthMm = 2, FillColor = "#FFD400" },
+                    new CreateEllipseAction { Id = "dot", XMm = 20, YMm = 30, WidthMm = 40, HeightMm = 40, FillColor = "#D8202A" },
+                    new CreateTextAction { Id = "text", Text = "DİKKAT", XMm = 75, YMm = 35, FontFamily = "Arial", FontSizePt = 60 },
+                    new ExportPdfAction { Id = "pdf", FilePath = pdf },
+                    new CloseDocumentAction { Id = "close" },
+                ],
+            });
+
+            await Run(executor, new AutomationPlan
+            {
+                Name = "Import",
+                Target = DocumentTarget.NewDocument,
+                Actions =
+                [
+                    new CreateDocumentAction { Id = "doc", WidthMm = 200, HeightMm = 100 },
+                    new ImportFileAction { Id = "import", FilePath = pdf, Name = "PDF içeriği" },
+                ],
+            });
+
+            var imported = (await inspector.InspectActiveDocumentAsync())!;
+            var leaves = imported.AllShapes().Where(shape => shape.Type != ShapeKind.Group).ToArray();
+            foreach (var shape in leaves)
+            {
+                output.WriteLine($"  {shape.Id} {shape.Type} '{shape.Text}' fill={shape.Fill?.ColorHex} {shape.Bounds.WidthMm:0.0} x {shape.Bounds.HeightMm:0.0} mm");
+            }
+
+            Assert.True(leaves.Length >= 3, "the PDF arrived as fewer objects than it was made of");
+            Assert.DoesNotContain(leaves, shape => shape.Type == ShapeKind.Bitmap);            // not flattened
+            Assert.Contains(leaves, shape => shape.Fill?.ColorHex is { } color && Domain.References.StructuralComparer.ColorDistance(color, "#D8202A") < 40);
+            output.WriteLine(leaves.Any(shape => shape.IsText)
+                ? "Text arrived as editable text."
+                : "Text arrived as curves (vector, but no longer editable as text).");
+        }
+        finally
+        {
+            await CloseTestDocuments(inspector, executor, userHadDocumentOpen);
+        }
+    }
+
     private async Task<PlanExecutionResult> Run(CorelActionExecutor executor, AutomationPlan plan)
     {
         var result = await executor.ExecuteAsync(plan);
