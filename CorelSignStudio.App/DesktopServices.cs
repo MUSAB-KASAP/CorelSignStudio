@@ -49,22 +49,3 @@ public sealed class DesktopShellService : IDesktopShellService
         Process.Start(new ProcessStartInfo(path) { UseShellExecute = true });
     }
 }
-
-public static class ProjectPaths
-{
-    public static string FindProjectRoot()
-    {
-        var current = new DirectoryInfo(AppContext.BaseDirectory);
-        while (current is not null)
-        {
-            if (File.Exists(Path.Combine(current.FullName, "CorelSignStudio.sln")))
-            {
-                return current.FullName;
-            }
-
-            current = current.Parent;
-        }
-
-        return @"D:\CorelSignStudio";
-    }
-}

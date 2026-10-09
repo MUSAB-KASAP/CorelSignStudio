@@ -11,6 +11,7 @@ using CorelSignStudio.Domain.Batch;
 using CorelSignStudio.Domain.Inspection;
 using CorelSignStudio.Domain.Localization;
 using CorelSignStudio.Domain.Planning;
+using CorelSignStudio.Domain.Production;
 using CorelSignStudio.Domain.Recipes;
 using CorelSignStudio.Domain.References;
 using CorelSignStudio.Storage;
@@ -35,9 +36,12 @@ public sealed class RecipeVariableRow(RecipeVariable variable) : ObservableObjec
     public string Value { get => _value; set => SetProperty(ref _value, value); }
 }
 
-/// <summary>Everything the operator window needs from the outside world.</summary>
+/// <summary>
+/// Everything the operator window needs from the outside world. <paramref name="ConnectCorel"/> connects to
+/// CorelDRAW and returns its version.
+/// </summary>
 public sealed record OperatorServices(
-    CorelAutomationService Corel,
+    Func<Task<string>> ConnectCorel,
     ICorelDocumentInspector Inspector,
     ICorelActionExecutor Executor,
     PlannerRouter Planner,
@@ -49,6 +53,13 @@ public sealed record OperatorServices(
     IReferenceReconstructionPlanner Reconstruction,
     IReferenceAnalyzer ReferenceAnalyzer,
     IReferencePlanBuilder ReferencePlanBuilder,
+    IVisualComparisonService Comparison,
+    IVisualCorrectionPlanner Corrections,
+    ICorelPagePreviewRenderer? PagePreview,
+    IReferencePreviewRenderer? ReferencePreviews,
+    IDesignPreflightService Preflight,
+    IReadOnlyCollection<string> InstalledFonts,
+    Func<string, int> PdfPageCount,
     IDesktopShellService Shell,
     FileLogWriter FileLog,
     string DataFolder,
@@ -83,7 +94,10 @@ public sealed partial class OperatorViewModel : ObservableObject
     private ShapeRow? _selectedShape;
     private Recipe? _selectedRecipe;
     private Recipe? _batchRecipe;
-    private string _batchCsvPath = "";
+    private string _batchDataPath = "";
+    private string? _selectedWorksheet;
+    private string _batchDataSummary = "";
+    private IReadOnlyList<BatchRow> _batchData = [];
     private string _batchNamePattern = "";
     private bool _batchCdr = true;
     private bool _batchPdf = true;
@@ -91,7 +105,6 @@ public sealed partial class OperatorViewModel : ObservableObject
     private bool _batchSvg;
     private double _batchPercent;
     private string _batchStatus = Ui.T("Batch.Status.Initial");
-    private CancellationTokenSource? _batchCancellation;
     private Asset? _selectedAsset;
     private string _assetSearch = "";
     private string _assetCategory = "";
@@ -122,14 +135,22 @@ public sealed partial class OperatorViewModel : ObservableObject
 
         ConnectCommand = Async(ConnectAsync);
         InspectCommand = Async(InspectAsync);
+        CancelCommand = new RelayCommand(() => _operationCancellation?.Cancel(), () => _operationCancellation is not null);
         PreparePlanCommand = Async(PreparePlanAsync);
-        AnalyzeReferenceCommand = Async(() => RunBusyAsync(Ui.T("Status.Analyzing"), async () => { await AnalyzeReferenceAsync(CombinedReferenceRequest(), force: true); }), () => References.Count > 0);
+        AnalyzeReferenceCommand = Async(
+            () => RunCancellableAsync(Ui.T("Status.Analyzing"), async token => { await AnalyzeReferenceAsync(CombinedReferenceRequest(), force: true, token); }),
+            () => References.Count > 0);
         References.CollectionChanged += (_, _) =>
         {
             ClearAnalysis();
+            RaisePdfPageState();
             RaiseCommandStates();
         };
         ExecuteCommand = Async(ExecutePlanAsync, () => _plan is not null);
+        CompareCommand = Async(CompareWithReferenceAsync, () => HasComparisonContext && _snapshot is not null);
+        ImproveCommand = Async(ImproveAutomaticallyAsync, () => HasComparisonContext && _snapshot is not null);
+        PreflightCommand = Async(RunPreflightAsync, () => _snapshot is not null);
+        PreviewPdfPageCommand = Async(PreviewPdfPageAsync, () => HasPdfPages && SelectedPdfPage is not null && _services.ReferencePreviews is not null);
         SaveRecipeCommand = Command(SaveRecipe, () => (_lastSuccessfulPlan ?? _plan) is not null && !string.IsNullOrWhiteSpace(RecipeName));
         ClearPlanCommand = Command(
             () =>
@@ -145,10 +166,9 @@ public sealed partial class OperatorViewModel : ObservableObject
         UseRecipeCommand = Command(UseSelectedRecipe, () => SelectedRecipe is not null);
         DeleteRecipeCommand = Command(DeleteSelectedRecipe, () => SelectedRecipe is not null);
 
-        BrowseBatchCsvCommand = Command(BrowseBatchCsv);
+        BrowseBatchDataCommand = Command(BrowseBatchData);
         PreviewBatchCommand = Command(() => PreviewBatch(), () => BatchRecipe is not null);
-        RunBatchCommand = Async(RunBatchAsync, () => BatchRecipe is not null);
-        CancelBatchCommand = new RelayCommand(() => _batchCancellation?.Cancel(), () => _batchCancellation is not null);
+        RunBatchCommand = Async(RunBatchAsync, () => BatchRecipe is not null && _batchData.Count > 0 && BatchFormats().Count > 0);
 
         AddAssetCommand = Command(AddAssets);
         RemoveAssetCommand = Command(RemoveSelectedAsset, () => SelectedAsset is not null);
@@ -179,6 +199,8 @@ public sealed partial class OperatorViewModel : ObservableObject
     public ObservableCollection<Recipe> Recipes { get; } = [];
     public ObservableCollection<RecipeVariableRow> RecipeVariableRows { get; } = [];
     public ObservableCollection<BatchPreviewRow> BatchRows { get; } = [];
+    public ObservableCollection<string> WorksheetNames { get; } = [];
+    public ObservableCollection<string> BatchSampleRows { get; } = [];
     public ObservableCollection<Asset> Assets { get; } = [];
     public ObservableCollection<HistoryRow> HistoryRows { get; } = [];
     public IReadOnlyList<string> ExampleCommands => DeterministicCommandPlanner.Examples;
@@ -197,11 +219,10 @@ public sealed partial class OperatorViewModel : ObservableObject
     public RelayCommand InsertShapeIdCommand { get; }
     public RelayCommand UseRecipeCommand { get; }
     public RelayCommand DeleteRecipeCommand { get; }
-    public RelayCommand BrowseBatchCsvCommand { get; }
+    public RelayCommand BrowseBatchDataCommand { get; }
     public RelayCommand PreviewBatchCommand { get; }
     public AsyncRelayCommand RunBatchCommand { get; }
     public AsyncRelayCommand TestAiCommand { get; }
-    public RelayCommand CancelBatchCommand { get; }
     public RelayCommand AddAssetCommand { get; }
     public RelayCommand RemoveAssetCommand { get; }
     public RelayCommand PlaceAssetCommand { get; }
@@ -357,6 +378,7 @@ public sealed partial class OperatorViewModel : ObservableObject
         {
             if (SetProperty(ref _selectedReference, value))
             {
+                RaisePdfPageState();
                 RaiseCommandStates();
             }
         }
@@ -411,12 +433,48 @@ public sealed partial class OperatorViewModel : ObservableObject
             ? Ui.T("Batch.Hint.NoVariables")
             : Ui.F("Batch.Hint.Columns", string.Join(", ", BatchRecipe.Variables.Select(variable => variable.Name)));
 
-    public string BatchCsvPath { get => _batchCsvPath; set => SetProperty(ref _batchCsvPath, value); }
+    /// <summary>The batch data file: CSV or Excel (.xlsx).</summary>
+    public string BatchDataPath
+    {
+        get => _batchDataPath;
+        set
+        {
+            if (SetProperty(ref _batchDataPath, value))
+            {
+                LoadWorksheets();
+            }
+        }
+    }
+
+    /// <summary>The worksheet rows are read from; null for CSV.</summary>
+    public string? SelectedWorksheet
+    {
+        get => _selectedWorksheet;
+        set
+        {
+            if (SetProperty(ref _selectedWorksheet, value))
+            {
+                LoadBatchData();
+            }
+        }
+    }
+
+    public bool HasWorksheets => WorksheetNames.Count > 0;
+    public string BatchDataSummary { get => _batchDataSummary; private set => SetProperty(ref _batchDataSummary, value); }
+    public int BatchRecordCount => _batchData.Count;
     public string BatchNamePattern { get => _batchNamePattern; set => SetProperty(ref _batchNamePattern, value); }
-    public bool BatchCdr { get => _batchCdr; set => SetProperty(ref _batchCdr, value); }
-    public bool BatchPdf { get => _batchPdf; set => SetProperty(ref _batchPdf, value); }
-    public bool BatchPng { get => _batchPng; set => SetProperty(ref _batchPng, value); }
-    public bool BatchSvg { get => _batchSvg; set => SetProperty(ref _batchSvg, value); }
+    public bool BatchCdr { get => _batchCdr; set => SetFormat(ref _batchCdr, value); }
+    public bool BatchPdf { get => _batchPdf; set => SetFormat(ref _batchPdf, value); }
+    public bool BatchPng { get => _batchPng; set => SetFormat(ref _batchPng, value); }
+    public bool BatchSvg { get => _batchSvg; set => SetFormat(ref _batchSvg, value); }
+
+    private void SetFormat(ref bool field, bool value, [System.Runtime.CompilerServices.CallerMemberName] string? name = null)
+    {
+        if (SetProperty(ref field, value, name))
+        {
+            RaiseCommandStates();
+        }
+    }
     public double BatchPercent { get => _batchPercent; private set => SetProperty(ref _batchPercent, value); }
     public string BatchStatus { get => _batchStatus; private set => SetProperty(ref _batchStatus, value); }
 
@@ -471,6 +529,7 @@ public sealed partial class OperatorViewModel : ObservableObject
                 var reference = ReferenceInput.FromFile(path);
                 if (References.All(existing => !string.Equals(existing.FilePath, reference.FilePath, StringComparison.OrdinalIgnoreCase)))
                 {
+                    RegisterPdfPages(reference);
                     References.Add(reference);
                     AddLog(Ui.F("Log.ReferenceAdded", reference.FileName, reference.FileTypeLabel, Ui.T(reference.IsVector ? "Log.ReferenceVector" : "Log.ReferenceBitmap")));
                 }
@@ -490,9 +549,9 @@ public sealed partial class OperatorViewModel : ObservableObject
     private async Task EnsureConnectedAsync()
     {
         // Always (re)connect: it is cheap, and it recovers when the user closed and reopened CorelDRAW.
-        var connection = await _services.Corel.ConnectAsync(visible: true);
+        var version = await _services.ConnectCorel();
         IsConnected = true;
-        ConnectionText = Ui.F("Connection.Connected", connection.Version);
+        ConnectionText = Ui.F("Connection.Connected", version);
     }
 
     private Task InspectAsync() => RunBusyAsync(Ui.T("Status.Inspecting"), async () =>
@@ -508,6 +567,7 @@ public sealed partial class OperatorViewModel : ObservableObject
     {
         _snapshot = await _services.Inspector.InspectActiveDocumentAsync();
         Shapes.Clear();
+        RaiseCommandStates();
         if (_snapshot is null)
         {
             ActiveDocumentText = Ui.T("Document.NoneOpen");
@@ -550,13 +610,14 @@ public sealed partial class OperatorViewModel : ObservableObject
         _analysis = null;
         _analysisReference = null;
         _analysisRequestText = "";
+        _analysisPage = 0;
         _pendingReferenceRequest = "";
         AnalysisSummary = "";
     }
 
     /// <summary>Analyses the selected reference. Nothing is uploaded before this is called.</summary>
     /// <returns>True when a usable analysis is available.</returns>
-    private async Task<bool> AnalyzeReferenceAsync(string request, bool force)
+    private async Task<bool> AnalyzeReferenceAsync(string request, bool force, CancellationToken token)
     {
         var reference = ReferenceToAnalyze;
         if (reference is null)
@@ -567,13 +628,18 @@ public sealed partial class OperatorViewModel : ObservableObject
 
         // A size ("500x700 mm") does not change what is on the reference, so it never forces a new analysis.
         var content = SizeText().Replace(request, " ").Trim();
-        if (!force && _analysis is not null && ReferenceEquals(_analysisReference, reference) && content == _analysisRequestText)
+        var page = ResolvePage(reference, request);
+        if (!force && _analysis is not null && ReferenceEquals(_analysisReference, reference) && content == _analysisRequestText && (page ?? 0) == _analysisPage)
         {
             return true;
         }
 
         StatusMessage = Ui.F("Status.Busy", Ui.T("Status.Analyzing"));
-        var result = await _services.Vision.AnalyzeAsync(new ReferenceAnalysisRequest { Reference = reference, UserRequest = request });
+
+        // "Referansı Analiz Et" always asks again; planning reuses an identical analysis from this session.
+        var result = await _services.Vision.AnalyzeAsync(
+            new ReferenceAnalysisRequest { Reference = reference, UserRequest = request, PageNumber = page, BypassCache = force }, token);
+        token.ThrowIfCancellationRequested();
         if (result.Diagnostics.TechnicalError is { } technical)
         {
             _services.FileLog.Write($"Reference analysis failed ({result.Diagnostics.ErrorKind}): {technical}");
@@ -602,16 +668,17 @@ public sealed partial class OperatorViewModel : ObservableObject
         _analysis = result.Analysis;
         _analysisReference = reference;
         _analysisRequestText = content;
+        _analysisPage = page ?? 0;
         AnalysisSummary = DescribeAnalysis(result.Analysis!, request);
         AddLog(Ui.F("Log.Analyzed", reference.FileName, result.Analysis!.Elements.Count));
         StatusMessage = Ui.T("Status.Analyzed");
         return true;
     }
 
-    private async Task ReconstructFromReferenceAsync()
+    private async Task ReconstructFromReferenceAsync(CancellationToken token)
     {
         var request = CombinedReferenceRequest();
-        if (!await AnalyzeReferenceAsync(request, force: false))
+        if (!await AnalyzeReferenceAsync(request, force: false, token))
         {
             return;
         }
@@ -639,6 +706,7 @@ public sealed partial class OperatorViewModel : ObservableObject
         var warnings = _analysis!.Warnings.Concat(result.Warnings).Distinct().ToList();
         var message = result.UserMessage + (warnings.Count > 0 ? Ui.F("Plan.Warnings", string.Join(" • ", warnings)) : "");
         SetPlan(result.Plan, message);
+        RememberPendingReconstruction(result, warnings);
         if (!result.IsReady)
         {
             AddLog(result.UserMessage);
@@ -714,11 +782,11 @@ public sealed partial class OperatorViewModel : ObservableObject
     [System.Text.RegularExpressions.GeneratedRegex(@"\d+(?:[.,]\d+)?\s*(?:mm|cm|m)?\s*[x×*]\s*\d+(?:[.,]\d+)?\s*(?:mm|cm|m)?(?![\w])", System.Text.RegularExpressions.RegexOptions.IgnoreCase)]
     private static partial System.Text.RegularExpressions.Regex SizeText();
 
-    private Task PreparePlanAsync() => RunBusyAsync(Ui.T(_services.Planner.IsAiActive && !string.IsNullOrWhiteSpace(Request) ? "Status.AiPlanning" : "Status.Planning"), async () =>
+    private Task PreparePlanAsync() => RunCancellableAsync(Ui.T(_services.Planner.IsAiActive && !string.IsNullOrWhiteSpace(Request) ? "Status.AiPlanning" : "Status.Planning"), async token =>
     {
         if (WantsReconstruction(Request))
         {
-            await ReconstructFromReferenceAsync();
+            await ReconstructFromReferenceAsync(token);
             return;
         }
 
@@ -763,7 +831,8 @@ public sealed partial class OperatorViewModel : ObservableObject
             Document = _snapshot,
             References = References.ToArray(),
             Conversation = _conversation.ToArray(),
-        });
+        }, token);
+        token.ThrowIfCancellationRequested();
 
         if (result.Diagnostics.TechnicalError is { } technical)
         {
@@ -815,6 +884,11 @@ public sealed partial class OperatorViewModel : ObservableObject
     private void SetPlan(AutomationPlan? plan, string message)
     {
         _plan = plan;
+        if (!ReferenceEquals(_pendingContext?.Plan, plan))
+        {
+            _pendingContext = null;
+        }
+
         ProposedOperations.Clear();
         if (plan is not null)
         {
@@ -836,7 +910,7 @@ public sealed partial class OperatorViewModel : ObservableObject
         RaiseCommandStates();
     }
 
-    private Task ExecutePlanAsync() => RunBusyAsync(Ui.T("Status.Executing"), async () =>
+    private Task ExecutePlanAsync() => RunCancellableAsync(Ui.T("Status.Executing"), async token =>
     {
         var plan = _plan!;
         if (plan.HasDestructiveActions && !_services.Shell.Confirm(
@@ -858,13 +932,14 @@ public sealed partial class OperatorViewModel : ObservableObject
             }
         });
 
-        var result = await _services.Executor.ExecuteAsync(plan, new ExecutionOptions { RollbackOnFailure = RollbackOnFailure }, progress);
+        var result = await _services.Executor.ExecuteAsync(plan, new ExecutionOptions { RollbackOnFailure = RollbackOnFailure }, progress, token);
         _services.History.Append(new ExecutionHistoryEntry { Plan = plan, Result = result });
         RefreshHistory();
 
         if (result.Success)
         {
             _lastSuccessfulPlan = plan;
+            UpdateContextAfterExecution(plan);
             if (string.IsNullOrWhiteSpace(RecipeName))
             {
                 RecipeName = plan.Name;
@@ -887,7 +962,7 @@ public sealed partial class OperatorViewModel : ObservableObject
             }
 
             _services.FileLog.Write($"Plan '{plan.Name}' failed: {result.ErrorDetails}");
-            StatusMessage = Ui.T("Status.Failed");
+            StatusMessage = Ui.T(result.Status == PlanExecutionStatus.Cancelled ? "Status.Cancelled" : "Status.Failed");
         }
 
         await RefreshSnapshotAsync();
@@ -967,6 +1042,9 @@ public sealed partial class OperatorViewModel : ObservableObject
 
     // ---- Recipes -----------------------------------------------------------------------------
 
+    /// <summary>Reloads the recipe list after the store changed outside the window (used by tests).</summary>
+    public void RefreshRecipesForTests() => RefreshRecipes();
+
     private void RefreshRecipes()
     {
         var selectedId = SelectedRecipe?.Id;
@@ -1012,14 +1090,99 @@ public sealed partial class OperatorViewModel : ObservableObject
 
     // ---- Batch -------------------------------------------------------------------------------
 
-    private void BrowseBatchCsv()
+    private void BrowseBatchData()
     {
-        var file = _services.Shell.BrowseForFiles(Ui.T("Dialog.CsvTitle"), Ui.T("Dialog.CsvFilter"), multiple: false).FirstOrDefault();
+        var file = _services.Shell.BrowseForFiles(Ui.T("Dialog.BatchDataTitle"), Ui.T("Dialog.BatchDataFilter"), multiple: false).FirstOrDefault();
         if (file is not null)
         {
-            BatchCsvPath = file;
+            BatchDataPath = file;
             PreviewBatch();
         }
+    }
+
+    /// <summary>Lists the worksheets of an Excel file (none for CSV) and loads the first one.</summary>
+    private void LoadWorksheets()
+    {
+        WorksheetNames.Clear();
+        _selectedWorksheet = null;
+        try
+        {
+            if (File.Exists(BatchDataPath))
+            {
+                foreach (var name in BatchDataReaders.For(BatchDataPath).GetSheetNames(BatchDataPath))
+                {
+                    WorksheetNames.Add(name);
+                }
+            }
+        }
+        catch (Exception exception) when (exception is IOException or FormatException or ArgumentException or UnauthorizedAccessException)
+        {
+            // Reported by LoadBatchData below, which fails on the same file for the same reason.
+            _services.FileLog.Write("Reading the worksheet list failed.", exception);
+        }
+
+        _selectedWorksheet = WorksheetNames.FirstOrDefault();
+        OnPropertyChanged(nameof(HasWorksheets));
+        OnPropertyChanged(nameof(SelectedWorksheet));
+        LoadBatchData();
+    }
+
+    /// <summary>Reads the rows of the chosen file and worksheet and summarises them; only five rows are shown.</summary>
+    private bool LoadBatchData()
+    {
+        _batchData = [];
+        BatchSampleRows.Clear();
+        var loaded = false;
+        try
+        {
+            if (!File.Exists(BatchDataPath))
+            {
+                BatchDataSummary = "";
+            }
+            else
+            {
+                _batchData = BatchDataReaders.For(BatchDataPath).Read(BatchDataPath, SelectedWorksheet);
+                var columns = _batchData.Count > 0 ? _batchData[0].Values.Keys.ToArray() : [];
+                var lines = new List<string> { Ui.F("Batch.Data.Records", _batchData.Count) };
+                if (SelectedWorksheet is not null)
+                {
+                    lines.Add(Ui.F("Batch.Data.Sheet", SelectedWorksheet));
+                }
+
+                if (columns.Length > 0)
+                {
+                    lines.Add(Ui.F("Batch.Data.Variables", string.Join(", ", columns)));
+                }
+
+                BatchDataSummary = string.Join(Environment.NewLine, lines);
+                foreach (var row in _batchData.Take(5))
+                {
+                    BatchSampleRows.Add(Ui.F("Batch.Data.Row", row.RowNumber, string.Join("  •  ", row.Values.Select(pair => $"{pair.Key}: {pair.Value}"))));
+                }
+
+                loaded = true;
+            }
+        }
+        catch (Exception exception) when (exception is IOException or FormatException or ArgumentException or UnauthorizedAccessException)
+        {
+            BatchDataSummary = Ui.F("Batch.Status.ReadError", exception.Message);
+            BatchStatus = BatchDataSummary;
+            _services.FileLog.Write("Reading batch data failed.", exception);
+        }
+
+        OnPropertyChanged(nameof(BatchRecordCount));
+        RaiseCommandStates();
+        return loaded;
+    }
+
+    private List<OutputFormat> BatchFormats()
+    {
+        var formats = new List<OutputFormat>();
+        if (BatchCdr) formats.Add(OutputFormat.Cdr);
+        if (BatchPdf) formats.Add(OutputFormat.Pdf);
+        if (BatchPng) formats.Add(OutputFormat.Png);
+        if (BatchSvg) formats.Add(OutputFormat.Svg);
+        return formats;
     }
 
     private (BatchJob Job, IReadOnlyList<BatchItem> Items)? PreviewBatch()
@@ -1034,17 +1197,25 @@ public sealed partial class OperatorViewModel : ObservableObject
                 return null;
             }
 
-            if (!File.Exists(BatchCsvPath))
+            if (!File.Exists(BatchDataPath))
             {
-                BatchStatus = Ui.T("Batch.Status.ChooseCsv");
+                BatchStatus = Ui.T("Batch.Status.ChooseData");
                 return null;
             }
 
-            var formats = new List<OutputFormat>();
-            if (BatchCdr) formats.Add(OutputFormat.Cdr);
-            if (BatchPdf) formats.Add(OutputFormat.Pdf);
-            if (BatchPng) formats.Add(OutputFormat.Png);
-            if (BatchSvg) formats.Add(OutputFormat.Svg);
+            // Read again: the file may have been edited since it was chosen.
+            if (!LoadBatchData())
+            {
+                return null;
+            }
+
+            if (_batchData.Count == 0)
+            {
+                BatchStatus = Ui.T("Batch.Status.NoRows");
+                return null;
+            }
+
+            var formats = BatchFormats();
             if (formats.Count == 0)
             {
                 BatchStatus = Ui.T("Batch.Status.ChooseFormat");
@@ -1055,7 +1226,7 @@ public sealed partial class OperatorViewModel : ObservableObject
             {
                 Name = Ui.F("Batch.JobName", BatchRecipe.Name),
                 RecipeId = BatchRecipe.Id,
-                Rows = CsvBatchReader.ReadFile(BatchCsvPath),
+                Rows = _batchData,
                 OutputFolder = OutputFolder,
                 OutputNamePattern = string.IsNullOrWhiteSpace(BatchNamePattern) ? null : BatchNamePattern.Trim(),
                 Formats = formats,
@@ -1076,7 +1247,7 @@ public sealed partial class OperatorViewModel : ObservableObject
         }
     }
 
-    private Task RunBatchAsync() => RunBusyAsync(Ui.T("Status.RunningBatch"), async () =>
+    private Task RunBatchAsync() => RunCancellableAsync(Ui.T("Status.RunningBatch"), async token =>
     {
         if (PreviewBatch() is not { } batch)
         {
@@ -1084,37 +1255,30 @@ public sealed partial class OperatorViewModel : ObservableObject
         }
 
         await EnsureConnectedAsync();
-        using var cancellation = new CancellationTokenSource();
-        _batchCancellation = cancellation;
-        CancelBatchCommand.RaiseCanExecuteChanged();
-        try
+        var recipe = BatchRecipe!;
+        AddLog(Ui.F("Log.BatchStarted", batch.Job.Name, batch.Items.Count));
+        var progress = new Progress<BatchProgress>(report =>
         {
-            var recipe = BatchRecipe!;
-            AddLog(Ui.F("Log.BatchStarted", batch.Job.Name, batch.Items.Count));
-            var progress = new Progress<BatchProgress>(report =>
-            {
-                BatchPercent = report.Percent;
-                BatchStatus = Ui.F("Batch.Status.Progress", report.Completed, report.Total, report.Succeeded, report.Failed) +
-                              (report.CurrentOutputName is null ? "" : Ui.F("Batch.Status.Current", report.CurrentOutputName));
-            });
+            BatchPercent = report.Percent;
+            BatchStatus = Ui.F("Batch.Status.Progress", report.Completed, report.Total, report.Succeeded, report.Failed) +
+                          (report.CurrentOutputName is null ? "" : Ui.F("Batch.Status.Current", report.CurrentOutputName));
+        });
 
-            var result = await new BatchRunner(_services.Executor).RunAsync(batch.Job, recipe, progress, cancellationToken: cancellation.Token);
+        var result = await new BatchRunner(_services.Executor).RunAsync(batch.Job, recipe, progress, cancellationToken: token);
 
-            BatchRows.Clear();
-            foreach (var item in result.Items)
-            {
-                BatchRows.Add(new BatchPreviewRow(item.RowNumber, item.OutputBaseName ?? "", item.Success ? Ui.T("Batch.Row.Done") : Ui.F("Batch.Row.Failed", item.Error)));
-            }
-
-            BatchPercent = 100;
-            BatchStatus = Ui.F("Batch.Status.Finished", result.Duration.TotalSeconds.ToString("0.0", Msg.Culture), result.Succeeded, result.Failed,
-                result.Cancelled ? Ui.T("Batch.Status.Cancelled") : "", OutputFolder);
-            AddLog(Ui.F("Log.BatchFinished", result.Succeeded, result.Failed, result.ProducedFiles.Count()));
+        BatchRows.Clear();
+        foreach (var item in result.Items)
+        {
+            BatchRows.Add(new BatchPreviewRow(item.RowNumber, item.OutputBaseName ?? "", item.Success ? Ui.T("Batch.Row.Done") : Ui.F("Batch.Row.Failed", item.Error)));
         }
-        finally
+
+        BatchPercent = 100;
+        BatchStatus = Ui.F("Batch.Status.Finished", result.Duration.TotalSeconds.ToString("0.0", Msg.Culture), result.Succeeded, result.Failed,
+            result.Cancelled ? Ui.T("Batch.Status.Cancelled") : "", OutputFolder);
+        AddLog(Ui.F("Log.BatchFinished", result.Succeeded, result.Failed, result.ProducedFiles.Count()));
+        if (result.Cancelled)
         {
-            _batchCancellation = null;
-            CancelBatchCommand.RaiseCanExecuteChanged();
+            StatusMessage = Ui.T("Status.Cancelled");
         }
     });
 
@@ -1296,6 +1460,10 @@ public sealed partial class OperatorViewModel : ObservableObject
         FileNotFoundException notFound => notFound.FileName is null ? notFound.Message : Ui.F("Error.FileNotFound", notFound.FileName),
         UnauthorizedAccessException => Ui.T("Error.NoWriteAccess"),
         IOException => Ui.F("Error.FileAccess", exception.Message),
+        ReferencePreviewException => exception.Message,
+        AiClientException ai => ai.UserMessage,
+        System.Net.Http.HttpRequestException => Ui.T("Error.AiUnreachable"),
+        System.Text.Json.JsonException => Ui.T("Error.DataUnreadable"),
 
         // These are raised by the application itself with messages from the Turkish catalogue.
         RecipeVariableException or NotSupportedException or FormatException or ArgumentException => exception.Message,

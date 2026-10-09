@@ -61,6 +61,8 @@ internal sealed class FakeDesignWorld : ICorelDocumentInspector, ICorelActionExe
 
     public void Remove(string name) => _shapes.RemoveAll(shape => shape.Name == name);
 
+    public void Add(ShapeSnapshot shape) => _shapes.Add(shape);
+
     public DocumentSnapshot Snapshot() => new()
     {
         Title = "test",

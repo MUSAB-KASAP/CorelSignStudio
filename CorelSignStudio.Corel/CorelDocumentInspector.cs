@@ -159,6 +159,15 @@ public sealed class CorelDocumentInspector(CorelAutomationService service) : ICo
             kind = ShapeKind.Table;
         }
 
+        // Shape.Bitmap.SizeWidth/SizeHeight are the stored pixel dimensions (verified on CorelDRAW 2026).
+        BitmapInfo? bitmap = null;
+        if (kind == ShapeKind.Bitmap)
+        {
+            var pixelWidth = CorelShapes.Try(() => (int)shape.Bitmap.SizeWidth, 0);
+            var pixelHeight = CorelShapes.Try(() => (int)shape.Bitmap.SizeHeight, 0);
+            bitmap = pixelWidth > 0 && pixelHeight > 0 ? new BitmapInfo(pixelWidth, pixelHeight) : null;
+        }
+
         var children = new List<ShapeSnapshot>();
         if (nativeType == CorelShapes.ShapeTypeGroup)
         {
@@ -182,6 +191,7 @@ public sealed class CorelDocumentInspector(CorelAutomationService service) : ICo
             FontSizePt = fontSize,
             Bounds = (BoundsMm)frame.BoundsOf(shape),
             RotationDegrees = Math.Round(CorelShapes.Try(() => (double)shape.RotationAngle, 0d), 4),
+            Bitmap = bitmap,
             Fill = kind == ShapeKind.Group ? null : (FillInfo?)ReadFill(application, shape),
             Outline = kind == ShapeKind.Group ? null : (OutlineInfo?)ReadOutline(application, shape),
             LayerName = layerName,

@@ -48,11 +48,15 @@ public interface IDesignPreflightService
 
 /// <summary>
 /// Last look before files are written. It reports only what it can actually determine from the inspected
-/// document and the job; anything it cannot measure (for example bitmap resolution, which the snapshot
-/// does not carry) is left out rather than guessed.
+/// document and the job; anything it cannot measure is reported as unknown rather than guessed (a bitmap
+/// whose pixel size the design application did not report has an unknown resolution).
 /// </summary>
 public sealed class DesignPreflightService(Func<string, bool>? fileExists = null, Func<string, bool>? directoryWritable = null) : IDesignPreflightService
 {
+    /// <summary>At or above this a placed bitmap is fine; below it a warning; below <see cref="VeryLowDpi"/> a strong one.</summary>
+    public const int GoodDpi = 200;
+    public const int VeryLowDpi = 150;
+
     private readonly Func<string, bool> _fileExists = fileExists ?? File.Exists;
     private readonly Func<string, bool> _directoryWritable = directoryWritable ?? IsWritable;
 
@@ -106,6 +110,30 @@ public sealed class DesignPreflightService(Func<string, bool>? fileExists = null
                 else if (bounds.XMm < -0.5 || bounds.YMm < -0.5 || bounds.RightMm > page.WidthMm + 0.5 || bounds.BottomMm > page.HeightMm + 0.5)
                 {
                     warnings.Add(Msg.Format(shape.IsText ? "Preflight.TextOutsidePage" : "Preflight.OutsidePage", name));
+                }
+
+                if (shape.Type == ShapeKind.Bitmap)
+                {
+                    if (shape.EffectiveDpi is not { } dpi)
+                    {
+                        info.Add(Msg.Format("Preflight.DpiUnknown", name));
+                    }
+                    else
+                    {
+                        var lowest = (int)Math.Round(Math.Min(dpi.X, dpi.Y));
+                        if (lowest < VeryLowDpi)
+                        {
+                            warnings.Add(Msg.Format("Preflight.DpiVeryLow", name, lowest));
+                        }
+                        else if (lowest < GoodDpi)
+                        {
+                            warnings.Add(Msg.Format("Preflight.DpiLow", name, lowest));
+                        }
+                        else
+                        {
+                            info.Add(Msg.Format("Preflight.DpiOk", name, lowest));
+                        }
+                    }
                 }
 
                 if (shape.IsText && string.IsNullOrWhiteSpace(shape.Text))

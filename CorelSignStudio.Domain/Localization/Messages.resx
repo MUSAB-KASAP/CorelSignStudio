@@ -336,4 +336,8 @@
   <data name="Batch.SheetNotFound" xml:space="preserve"><value>“{0}” adında bir çalışma sayfası yok. Bulunan sayfalar: {1}</value></data>
   <data name="Batch.UnsupportedFile" xml:space="preserve"><value>Bu veri dosyası türü desteklenmiyor: {0}. Desteklenenler: .csv, .xlsx</value></data>
   <data name="Batch.ExcelUnreadable" xml:space="preserve"><value>Excel dosyası okunamadı: {0}</value></data>
+  <data name="Preflight.DpiVeryLow" xml:space="preserve"><value>{0}: görsel çözünürlüğü çok düşük (yaklaşık {1} DPI). Baskıda belirgin biçimde bulanık çıkar; en az 150 DPI gerekir.</value></data>
+  <data name="Preflight.DpiLow" xml:space="preserve"><value>{0}: görsel çözünürlüğü düşük (yaklaşık {1} DPI). Kaliteli baskı için 200 DPI ve üzeri önerilir.</value></data>
+  <data name="Preflight.DpiOk" xml:space="preserve"><value>{0}: görsel çözünürlüğü yeterli (yaklaşık {1} DPI).</value></data>
+  <data name="Preflight.DpiUnknown" xml:space="preserve"><value>{0}: görsel çözünürlüğü belirlenemedi.</value></data>
 </root>

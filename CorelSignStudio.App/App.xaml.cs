@@ -10,6 +10,7 @@ using CorelSignStudio.Imaging;
 using CorelSignStudio.Domain.Ai;
 using CorelSignStudio.Domain.Localization;
 using CorelSignStudio.Domain.Planning;
+using CorelSignStudio.Domain.Production;
 using CorelSignStudio.Domain.References;
 using CorelSignStudio.Storage;
 using CorelSignStudio.Templates;
@@ -27,11 +28,19 @@ public partial class App : Application
         base.OnStartup(e);
         ApplyCulture(Msg.Culture);
 
-        var projectRoot = ProjectPaths.FindProjectRoot();
-        var dataFolder = Path.Combine(projectRoot, "data");
-        var outputFolder = Path.Combine(projectRoot, "output");
+        // A source checkout keeps its files in the repository; an installed copy uses the user's profile.
+        var paths = AppPaths.Resolve();
+        var dataFolder = paths.DataFolder;
+        var outputFolder = paths.OutputFolder;
         var assetCatalog = new FileSystemAssetCatalog(Path.Combine(AppContext.BaseDirectory, "assets", "icons"));
-        var logger = new FileLogWriter(Path.Combine(projectRoot, "logs"));
+        var logger = new FileLogWriter(paths.LogFolder);
+        DispatcherUnhandledException += (_, args) =>
+        {
+            // Never show a raw exception: the details go to the log, the user gets one plain sentence.
+            logger.Write("Unhandled exception.", args.Exception);
+            MessageBox.Show(Ui.T("Error.Unexpected"), Ui.T("App.Title"), MessageBoxButton.OK, MessageBoxImage.Warning);
+            args.Handled = true;
+        };
         var shell = new DesktopShellService();
 
         // The user works in the same CorelDRAW this application drives, so never quit it on exit.
@@ -49,24 +58,38 @@ public partial class App : Application
             () => aiRuntime.Planner,
             () => aiRuntime.Settings.PlannerMode);
         _referenceTemp = new ReferenceTempStore();
+        var corel = _corelService;
+        var inspector = new CorelDocumentInspector(corel);
+        var executor = new CorelActionExecutor(corel);
+        var installedFonts = System.Windows.Media.Fonts.SystemFontFamilies.Select(family => family.Source).ToArray();
+
+        // JPG/PNG/PDF/SVG are read locally; CDR is read by CorelDRAW itself once it is connected.
+        var referencePreviews = CompositeReferencePreviewRenderer.CreateDefault(new CorelReferencePreviewRenderer(corel));
         var viewModel = new OperatorViewModel(new OperatorServices(
-            Corel: _corelService,
-            Inspector: new CorelDocumentInspector(_corelService),
-            Executor: new CorelActionExecutor(_corelService),
+            ConnectCorel: async () => (await corel.ConnectAsync(visible: true)).Version,
+            Inspector: inspector,
+            Executor: executor,
             Planner: planner,
             Ai: aiRuntime,
             Recipes: new JsonRecipeStore(Path.Combine(dataFolder, "recipes")),
             Assets: new JsonAssetLibrary(Path.Combine(dataFolder, "assets")),
             History: new JsonExecutionHistoryStore(Path.Combine(dataFolder, "history")),
-            Vision: new AiReferenceAnalyzer(
-                () => aiRuntime.Client,
-                // JPG/PNG/PDF/SVG are read locally; CDR is read by CorelDRAW itself once it is connected.
-                CompositeReferencePreviewRenderer.CreateDefault(new CorelReferencePreviewRenderer(_corelService))),
+            // The same file, page and request is not sent to the provider twice in one session.
+            Vision: new CachingReferenceVisionAnalyzer(new AiReferenceAnalyzer(() => aiRuntime.Client, referencePreviews)),
             Reconstruction: new ReferenceReconstructionPlanner(
-                new InstalledFontResolver(System.Windows.Media.Fonts.SystemFontFamilies.Select(family => family.Source)),
+                new InstalledFontResolver(installedFonts, supportsText: FontCoverage.Supports),
                 new SkiaReferenceImageCropper(_referenceTemp)),
             ReferenceAnalyzer: new FileReferenceAnalyzer(),
             ReferencePlanBuilder: new ImportReferencePlanBuilder(),
+
+            // Measured comparison always; a vision model's opinion is added when a provider is configured.
+            Comparison: new VisualComparisonService(visual: new AiVisualComparer(() => aiRuntime.Client)),
+            Corrections: new VisualCorrectionPlanner(),
+            PagePreview: new CorelPagePreviewRenderer(corel),
+            ReferencePreviews: referencePreviews,
+            Preflight: new DesignPreflightService(),
+            InstalledFonts: installedFonts,
+            PdfPageCount: PdfPages.Count,
             Shell: shell,
             FileLog: logger,
             DataFolder: dataFolder,
@@ -150,6 +173,10 @@ public partial class App : Application
             }
 
             await Task.Delay(600);
+            viewModel.ReviewTabIndex = 1;
+            await Dispatcher.InvokeAsync(() => { }, DispatcherPriority.ApplicationIdle);
+            window.SaveScreenshot(Path.Combine(folder, "0-operator-comparison.png"));
+            viewModel.ReviewTabIndex = 0;
             string[] names = ["operator", "document", "recipes", "batch", "assets", "history", "settings"];
             for (var index = 0; index < names.Length; index++)
             {
@@ -162,6 +189,36 @@ public partial class App : Application
         finally
         {
             Shutdown();
+        }
+    }
+}
+
+/// <summary>Whether an installed font can actually draw a text (Turkish letters, Arabic, …).</summary>
+public static class FontCoverage
+{
+    public static bool Supports(string fontFamily, string text)
+    {
+        try
+        {
+            var typeface = new System.Windows.Media.Typeface(fontFamily);
+            if (!typeface.TryGetGlyphTypeface(out var glyphs))
+            {
+                return false;
+            }
+
+            foreach (var rune in text.EnumerateRunes())
+            {
+                if (!System.Text.Rune.IsWhiteSpace(rune) && !System.Text.Rune.IsControl(rune) && !glyphs.CharacterToGlyphMap.ContainsKey(rune.Value))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+        catch (Exception exception) when (exception is ArgumentException or IOException or NotSupportedException or InvalidOperationException)
+        {
+            return false;
         }
     }
 }
