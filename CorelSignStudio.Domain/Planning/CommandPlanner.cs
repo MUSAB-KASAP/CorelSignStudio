@@ -50,7 +50,7 @@ public interface ICommandPlanner
 }
 
 /// <summary>
-/// Temporary, rule-based planner that understands a fixed vocabulary of Turkish and English test
+/// Built-in, rule-based planner that understands a fixed vocabulary of Turkish and English test
 /// commands. It exists to exercise the whole pipeline before an AI planner is connected.
 /// </summary>
 public sealed partial class DeterministicCommandPlanner : ICommandPlanner

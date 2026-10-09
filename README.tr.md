@@ -27,7 +27,7 @@ Otomasyon + satırlar ─► her satır için bir plan ─► CDR / PDF / PNG / 
 | **Operatör** | Referans dosyası ekleyin, ne yapılacağını yazın, **Planı Hazırla** ile işlemleri görün, **CORELDRAW'DA UYGULA** ile çalıştırın. |
 | **Açık Belge** | CorelDRAW'daki belgenin nesneleri: kimlik, tür, ad, metin, konum, boyut, katman, grup. |
 | **Otomasyonlar** | Kayıtlı otomasyonlar ve değişkenleri. Yeni değerlerle plan hazırlayın. |
-| **Toplu İşler** | Bir otomasyonu CSV dosyasındaki her satır için çalıştırın. |
+| **Toplu İşler** | Bir otomasyonu CSV veya Excel (.xlsx) dosyasındaki her satır için çalıştırın; Excel'de çalışma sayfası seçilir. |
 | **Varlıklar** | Logo, simge, işaret ve yeniden kullanılacak dosyalar için kütüphane. |
 | **Geçmiş** | Uygulanan her plan ve sonucu; planı yeniden yükleyebilirsiniz. |
 | **Ayarlar** | Çıktı klasörü, hata durumunda geri alma, veri klasörü, eski tabela aracı. |
@@ -247,6 +247,12 @@ numaralı işler gibi **düzenli üretim tasarımları** için güçlüdür.
 - `build\installer.iss` bu klasörden kurulum dosyası üreten Inno Setup betiğidir. Inno Setup 6 kuruluysa
   `publish.ps1` kurulum dosyasını da kendisi üretir; kurulu değilse üretmez ve bunu bildirir. Depoda hazır bir
   kurulum dosyası yoktur.
+- `build\acceptance.ps1` sürüm kabul çalıştırmasıdır: temiz derleme, testler, gerçek CorelDRAW testleri, yayın,
+  yayınlanan kopyanın kendi sınaması, ZIP, (Inno Setup varsa) kurulum ve kaldırma. Sonuç
+  `artifacts\acceptance\v1.0.0\acceptance-summary.txt` dosyasına PASS / FAIL / SKIPPED olarak yazılır.
+  Çalıştırırken CorelDRAW ekranda açık olmalıdır. Sürüm notları: [docs/releases/v1.0.0.md](docs/releases/v1.0.0.md).
+- Programı kaldırmak ayarlarınızı, otomasyonlarınızı ve çıktılarınızı silmez
+  (`%LOCALAPPDATA%\CorelSignStudio` ve `Belgeler\Corel AI Operatörü` yerinde kalır).
 - Yayınlanan kopya kendini sınayabilir: `CorelSignStudio.App.exe --selftest rapor.txt --corel`.
 - Kurulu uygulama verilerini `%LOCALAPPDATA%\CorelSignStudio` altında, çıktıları `Belgeler\Corel AI Operatörü`
   altında tutar. API anahtarı ve kişisel ayarlar yayın paketine dahil değildir.
