@@ -28,6 +28,9 @@ AppVerName={#AppName} {#AppVersion}
 AppPublisher=Corel Sign Studio
 VersionInfoVersion={#AppVersion}
 VersionInfoProductName={#AppName}
+; Per-user by default: with PrivilegesRequired=lowest, {autopf} is the user's own programs folder inside
+; the user profile, so no administrator rights are needed. Choosing "all users" in the dialog elevates
+; and uses Program Files instead.
 DefaultDirName={autopf}\CorelAI-Operator
 DefaultGroupName={#AppName}
 DisableProgramGroupPage=yes
