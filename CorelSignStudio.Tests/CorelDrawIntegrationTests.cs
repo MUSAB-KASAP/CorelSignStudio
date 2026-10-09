@@ -11,7 +11,7 @@ namespace CorelSignStudio.Tests;
 [Collection(CorelDrawCollection.Name)]
 public sealed class CorelDrawIntegrationTests(ITestOutputHelper output) : IClassFixture<CorelProcessJanitor>
 {
-    [Fact]
+    [CorelFact]
     [Trait("Category", "CorelIntegration")]
     public async Task CorelDraw27_connects_on_sta_and_writes_real_cdr_and_pdf_files()
     {

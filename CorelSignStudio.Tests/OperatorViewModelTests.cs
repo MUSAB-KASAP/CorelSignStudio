@@ -88,7 +88,8 @@ internal sealed class OperatorHarness
         ICorelActionExecutor? executor = null,
         ICorelPagePreviewRenderer? pagePreview = null,
         IReferencePreviewRenderer? referencePreviews = null,
-        Func<Task<string>>? connect = null)
+        Func<Task<string>>? connect = null,
+        Func<string, int>? pdfPageCount = null)
     {
         object[] answers = Enumerable.Repeat((object)ReferenceFixtures.Answer(ReferenceFixtures.SignElements), 6).ToArray();
         Vision = new RecordingVision(scriptedVision ? ReferenceFixtures.Analyzer(new FakeVisionClient(answers)) : null);
@@ -112,7 +113,7 @@ internal sealed class OperatorHarness
             ReferencePreviews: referencePreviews,
             Preflight: new DesignPreflightService(),
             InstalledFonts: ["Arial"],
-            PdfPageCount: _ => pdfPages,
+            PdfPageCount: pdfPageCount ?? (_ => pdfPages),
             Shell: new FakeShell(),
             FileLog: new FileLogWriter(Path.Combine(Folder, "logs")),
             DataFolder: Folder,
