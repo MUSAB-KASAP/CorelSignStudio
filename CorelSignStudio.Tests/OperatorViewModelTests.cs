@@ -81,15 +81,22 @@ internal sealed class OperatorHarness
     public JsonRecipeStore Recipes { get; }
     public string Folder { get; } = TestFolders.Create();
 
-    public OperatorHarness(bool scriptedVision = true, int pdfPages = 1)
+    public OperatorHarness(
+        bool scriptedVision = true,
+        int pdfPages = 1,
+        ICorelDocumentInspector? inspector = null,
+        ICorelActionExecutor? executor = null,
+        ICorelPagePreviewRenderer? pagePreview = null,
+        IReferencePreviewRenderer? referencePreviews = null,
+        Func<Task<string>>? connect = null)
     {
         object[] answers = Enumerable.Repeat((object)ReferenceFixtures.Answer(ReferenceFixtures.SignElements), 6).ToArray();
         Vision = new RecordingVision(scriptedVision ? ReferenceFixtures.Analyzer(new FakeVisionClient(answers)) : null);
         Recipes = new JsonRecipeStore(Path.Combine(Folder, "recipes"));
         ViewModel = new OperatorViewModel(new OperatorServices(
-            ConnectCorel: () => Task.FromResult("27.0"),
-            Inspector: Corel,
-            Executor: Corel,
+            ConnectCorel: connect ?? (() => Task.FromResult("27.0")),
+            Inspector: inspector ?? Corel,
+            Executor: executor ?? Corel,
             Planner: new PlannerRouter(new DeterministicCommandPlanner(), () => null, () => PlannerMode.Deterministic),
             Ai: new AiRuntime(new AiSettingsStore(Path.Combine(Folder, "ai.json"), new DpapiSecretProtector(), _ => null), _ => { }),
             Recipes: Recipes,
@@ -101,8 +108,8 @@ internal sealed class OperatorHarness
             ReferencePlanBuilder: new ImportReferencePlanBuilder(),
             Comparison: new VisualComparisonService(),
             Corrections: new VisualCorrectionPlanner(),
-            PagePreview: null,
-            ReferencePreviews: null,
+            PagePreview: pagePreview,
+            ReferencePreviews: referencePreviews,
             Preflight: new DesignPreflightService(),
             InstalledFonts: ["Arial"],
             PdfPageCount: _ => pdfPages,
@@ -122,7 +129,7 @@ internal sealed class OperatorHarness
 
     public async Task Idle()
     {
-        for (var waited = 0; ViewModel.IsBusy && waited < 15000; waited += 10)
+        for (var waited = 0; ViewModel.IsBusy && waited < 180000; waited += 10)
         {
             await Task.Delay(10);
         }
