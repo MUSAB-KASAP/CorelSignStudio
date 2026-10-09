@@ -121,8 +121,19 @@ VisualComparisonResult -> VisualCorrectionPlanner -> AutomationPlan -> executor 
 - **The improvement loop** is bounded (3 passes by default) and stops when the target similarity is reached,
   nothing safe is left, a pass does not help, the executor fails, or the user cancels. Each pass is one undo step.
 - **Preflight** (`DesignPreflightService`) checks page size, objects outside the page, zero-size shapes, missing
-  fonts, unresolved placeholders, uncertain OCR text, missing input files, duplicate or unwritable outputs and
-  files that would be overwritten. Errors block production; warnings can be accepted.
+  fonts, bitmap resolution, unresolved placeholders, uncertain OCR text, merged-table warnings, missing input
+  files, duplicate or unwritable outputs and files that would be overwritten. Errors block production; warnings
+  can be accepted.
+- **Bitmap resolution** is the effective DPI at the placed size (`pixels / (mm / 25.4)`), from the pixel size
+  CorelDRAW reports (`Shape.Bitmap.SizeWidth/SizeHeight`, verified on CorelDRAW 2026): 200 DPI and above is fine,
+  150–199 is a warning, below 150 a strong warning.
+
+In the operator window these are the **Referansla Karşılaştır**, **Otomatik İyileştir** and **Üretim Kontrolü**
+buttons under the execute button, with their results in the *Referans Karşılaştırması* and *Üretim Kontrolü* tabs.
+**İptal** cancels planning, analysis, execution, comparison, improvement and batches. The comparison buttons are
+enabled only for a document that was rebuilt from a reference in this session; a different document is detected
+(none of the rebuilt objects are in it) and is not compared. A multi-page PDF reference shows a page selector
+with a page preview; no page is chosen silently, and a page written in the request ("3. sayfayı yap") wins.
 
 ## Batch data and recipe formulas
 
@@ -139,9 +150,20 @@ Version **1.0.0** is set once in `Directory.Build.props`.
 powershell -ExecutionPolicy Bypass -File build\publish.ps1     # -> artifacts\release\CorelAI-Operator
 ```
 
-The publish is a self-contained win-x64 build (no .NET installation needed). CorelDRAW 2026 is a prerequisite and
-is not bundled. `build\installer.iss` is an Inno Setup 6 script that turns the publish folder into a per-user
-installer with Start Menu and optional Desktop shortcuts; it needs the Inno Setup compiler (`ISCC.exe`).
+The publish is a self-contained win-x64 build (no .NET installation needed, about 185 MB). CorelDRAW 2026 is a
+prerequisite and is not bundled. The version is shown under **Ayarlar > Hakkında**.
+
+`build\installer.iss` is an Inno Setup 6 script that turns the publish folder into an installer
+(`artifacts\release\installer\CorelAI-Operator-1.0.0-Setup.exe`) with Start Menu and optional Desktop shortcuts
+and an uninstaller. `publish.ps1` builds it automatically when the Inno Setup compiler (`ISCC.exe`) is installed
+and says so when it is not. No installer binary is committed to this repository.
+
+A published copy can check itself, without a window:
+
+```
+CorelSignStudio.App.exe --selftest report.txt          # imaging, PDF, Excel, key protection, settings, fonts
+CorelSignStudio.App.exe --selftest report.txt --corel  # the same plus CorelDRAW: connect, draw, preview, CDR/PDF
+```
 A published copy keeps its data, settings and logs under `%LOCALAPPDATA%\CorelSignStudio` and writes output to
 `Documents\Corel AI Operatörü`. No API key, user setting or test output is part of the release.
 
@@ -181,11 +203,14 @@ plates, tables, simple posters and advertisements, serial-number jobs and other 
   fallback.
 - Right-to-left text is created as written and flagged for checking in CorelDRAW.
 - Merged table cells are reported, not reproduced. Arrow heads are not drawn.
-- A chosen page of a multi-page PDF is redrawn from its picture; its original vectors are not reused.
+- A single-page PDF is imported with its own objects (verified on CorelDRAW 2026: shapes arrive as curves, text
+  as editable text). A chosen page of a multi-page PDF is redrawn from its picture; its vectors are not reused.
 - Edits apply to the active page of the document.
 - Recipe placeholders support `+ - * /` and parentheses over numeric variables — nothing else, by design.
-- Preflight reports what the inspected document shows. Bitmap resolution is not checked, because the document
-  snapshot does not carry pixel dimensions.
+- Preflight reports what the inspected document shows. The resolution of a bitmap rotated off the axes, or one
+  whose pixel size CorelDRAW does not report, is shown as unknown rather than guessed.
+- Reference analysis, AI planning and the AI part of the comparison have only been exercised with scripted
+  model answers in this repository's tests; they need a configured API key to run for real.
 - Batch data is read from `.csv` and `.xlsx`. The older binary `.xls` format is not supported.
 - A CorelDRAW that is busy or showing a dialog blocks automation until the dialog is closed. With the CorelDRAW
   **trial**, hidden automation instances can be blocked by trial pop-ups and do not exit after `Quit()`; the
