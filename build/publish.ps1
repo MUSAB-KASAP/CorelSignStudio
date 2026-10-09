@@ -50,8 +50,11 @@ if (-not $SkipTests) {
 if (Test-Path $output) { Remove-Item $output -Recurse -Force }
 Invoke-Step 'Publish (win-x64, self-contained)' {
     dotnet publish $project -c Release -r win-x64 --self-contained true -o $output --nologo -v minimal `
-        -p:PublishSingleFile=false -p:DebugType=none -p:DebugSymbols=false
+        -p:PublishSingleFile=false -p:DebugType=none -p:DebugSymbols=false -p:SatelliteResourceLanguages=tr
 }
+
+# Debug symbols of native libraries are not needed to run the application.
+Get-ChildItem $output -Recurse -Filter *.pdb | Remove-Item -Force
 
 # Guard: a release never carries settings, keys, logs, outputs or test data.
 $forbidden = Get-ChildItem $output -Recurse -File | Where-Object {

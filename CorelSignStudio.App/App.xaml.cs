@@ -28,6 +28,15 @@ public partial class App : Application
         base.OnStartup(e);
         ApplyCulture(Msg.Culture);
 
+        // "--selftest <report file> [--corel]" checks this build's dependencies and exits without a window.
+        var selfTestIndex = Array.IndexOf(e.Args, "--selftest");
+        if (selfTestIndex >= 0 && selfTestIndex + 1 < e.Args.Length)
+        {
+            ShutdownMode = ShutdownMode.OnExplicitShutdown;
+            _ = RunSelfTestAndExitAsync(e.Args[selfTestIndex + 1], e.Args.Contains("--corel"));
+            return;
+        }
+
         // A source checkout keeps its files in the repository; an installed copy uses the user's profile.
         var paths = AppPaths.Resolve();
         var dataFolder = paths.DataFolder;
@@ -151,6 +160,21 @@ public partial class App : Application
 
         _referenceTemp?.Dispose();
         base.OnExit(e);
+    }
+
+    private async Task RunSelfTestAndExitAsync(string reportPath, bool withCorel)
+    {
+        var exitCode = 1;
+        try
+        {
+            exitCode = await SelfTest.RunAsync(reportPath, withCorel);
+        }
+        catch (Exception exception)
+        {
+            File.WriteAllText(reportPath, "RESULT: FAIL\n" + exception);
+        }
+
+        Shutdown(exitCode);
     }
 
     private async Task CaptureTabsAndExitAsync(OperatorWindow window, OperatorViewModel viewModel, string folder)
