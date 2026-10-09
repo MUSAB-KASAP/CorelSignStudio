@@ -32,7 +32,7 @@ Recipe + rows  ─► BatchExpander ─► one AutomationPlan per row ─► Bat
   `CorelAutomationService` (connection, verified save/export), `CorelDocumentInspector`, `CorelActionExecutor`.
 - `CorelSignStudio.AI` — AI provider implementation (Anthropic SDK) and per-user AI settings with a DPAPI-encrypted key.
 - `CorelSignStudio.Imaging` — reference previews (SkiaSharp, PDFtoImage/PDFium), SVG size reader, component cropper.
-- `CorelSignStudio.Storage` — JSON stores for recipes, assets and history; CSV batch reader; file-based reference analyzer.
+- `CorelSignStudio.Storage` — JSON stores for recipes, assets and history; CSV and Excel batch readers; file-based reference analyzer.
 - `CorelSignStudio.App` — the operator window (Operator, Current document, Automation recipes, Batch jobs, Assets, History, Settings).
   The original sign-template window is still available from Settings.
 - `CorelSignStudio.Templates` — the original parametric sign templates (unchanged).
@@ -157,6 +157,13 @@ prerequisite and is not bundled. The version is shown under **Ayarlar > Hakkınd
 (`artifacts\release\installer\CorelAI-Operator-1.0.0-Setup.exe`) with Start Menu and optional Desktop shortcuts
 and an uninstaller. `publish.ps1` builds it automatically when the Inno Setup compiler (`ISCC.exe`) is installed
 and says so when it is not. No installer binary is committed to this repository.
+
+`build\acceptance.ps1` is the release acceptance run: clean build, unit tests, the real-CorelDRAW suites, the real
+AI tests when the application has a credential, publish, the published copy's self-tests, the portable ZIP, the
+installer and an install/uninstall when Inno Setup is present, checksums, and a summary under
+`artifacts\acceptance\v1.0.0\` in which every line says PASS, FAIL or SKIPPED. Tests that need CorelDRAW
+(`COREL_INTEGRATION=1`) or an AI credential are reported as *skipped* when they do not run, never as passed.
+Have CorelDRAW open on screen for it. Release notes: [docs/releases/v1.0.0.md](docs/releases/v1.0.0.md).
 
 A published copy can check itself, without a window:
 

@@ -147,7 +147,7 @@ public sealed class CorelOperatorIntegrationTests : IClassFixture<CorelOperatorF
 
     private static bool Enabled => CorelOperatorFixture.Enabled;
 
-    [Fact]
+    [CorelFact]
     [Trait("Category", "CorelIntegration")]
     public async Task Operator_core_inspects_modifies_saves_and_reopens_a_real_document()
     {
@@ -385,7 +385,7 @@ public sealed class CorelOperatorIntegrationTests : IClassFixture<CorelOperatorF
         }));
     }
 
-    [Fact]
+    [CorelFact]
     [Trait("Category", "CorelIntegration")]
     public async Task Recipe_batch_produces_one_cdr_and_pdf_per_row()
     {
@@ -440,7 +440,7 @@ public sealed class CorelOperatorIntegrationTests : IClassFixture<CorelOperatorF
         }
     }
 
-    [Fact]
+    [CorelFact]
     [Trait("Category", "CorelIntegration")]
     public async Task Typed_commands_flow_through_planner_plan_and_executor_into_coreldraw()
     {
@@ -501,7 +501,7 @@ public sealed class CorelOperatorIntegrationTests : IClassFixture<CorelOperatorF
     /// Reference analysis (scripted, no AI call) → reconstruction plan → real CorelDRAW document → CDR and PDF.
     /// This is the Windows/CorelDRAW half of the reference-vision feature; it cannot run in the cloud.
     /// </summary>
-    [Fact]
+    [CorelFact]
     [Trait("Category", "CorelIntegration")]
     public async Task A_reference_analysis_is_rebuilt_as_editable_objects_in_coreldraw()
     {
@@ -593,7 +593,7 @@ public sealed class CorelOperatorIntegrationTests : IClassFixture<CorelOperatorF
     /// the bounded loop corrects them, and the full-page preview is rendered without touching the document.
     /// No AI is involved.
     /// </summary>
-    [Fact]
+    [CorelFact]
     [Trait("Category", "CorelIntegration")]
     public async Task Measured_differences_are_corrected_in_coreldraw_and_the_page_preview_leaves_the_document_untouched()
     {
@@ -714,7 +714,7 @@ public sealed class CorelOperatorIntegrationTests : IClassFixture<CorelOperatorF
     /// reports for a placed bitmap (and so its effective DPI), Arabic text surviving the round trip, and a
     /// landscape full-page preview with artwork much smaller than the page.
     /// </summary>
-    [Fact]
+    [CorelFact]
     [Trait("Category", "CorelIntegration")]
     public async Task Bitmap_resolution_arabic_text_and_a_landscape_page_preview_are_real()
     {
@@ -840,7 +840,7 @@ public sealed class CorelOperatorIntegrationTests : IClassFixture<CorelOperatorF
     /// CDR/PDF/PNG/SVG. The reference analysis is a scripted answer (no AI credential on this machine);
     /// everything after it is real.
     /// </summary>
-    [Fact]
+    [CorelFact]
     [Trait("Category", "CorelIntegration")]
     public async Task The_operator_workflow_runs_end_to_end_through_the_view_model_in_coreldraw()
     {
@@ -994,7 +994,7 @@ public sealed class CorelOperatorIntegrationTests : IClassFixture<CorelOperatorF
     /// What "vector content is reused" means on the real application: a single-page PDF brought in through
     /// the import action arrives as editable vector objects, not as one flattened picture.
     /// </summary>
-    [Fact]
+    [CorelFact]
     [Trait("Category", "CorelIntegration")]
     public async Task A_single_page_pdf_is_imported_as_editable_vector_objects()
     {
